@@ -7,6 +7,7 @@ export type BulkIntent = "hooks" | "skills" | "memory" | "config";
 export type ProjectActionName = "start" | "stop" | "restart";
 export type HistoryEntryKind = "project_action" | "bulk_action" | "project_registry";
 export type ProjectCompatibilityStatus = "incompatible" | "runtime_only" | "full";
+export type ProjectMemoryMode = "normal" | "locked" | "stateless";
 export type ProjectCompatibilityCheckName =
   | "lifecycle"
   | "gateway_probe"
@@ -69,6 +70,15 @@ export type ProjectModelProfile = {
   configuredModels: ProjectModelOption[];
 };
 
+export type ProjectMemoryProfile = {
+  mode: ProjectMemoryMode;
+  canReadMemory: boolean;
+  canWriteMemory: boolean;
+  effectivePluginSlot: string | null;
+  sessionMemoryHookEnabled: boolean;
+  memoryFlushEnabled: boolean;
+};
+
 export type ProjectListItem = {
   id: string;
   name: string;
@@ -82,6 +92,7 @@ export type ProjectListItem = {
   endpoints: ProjectEndpoints;
   auth: ProjectAuthProfile;
   model: ProjectModelProfile;
+  memory: ProjectMemoryProfile;
   capabilities: ProjectCapabilities;
   compatibility: ProjectCompatibilityProfile;
 };
@@ -129,6 +140,7 @@ export type ProjectRegistryView = {
   capabilities: ProjectCapabilities;
   auth: ProjectAuthProfile;
   model: ProjectModelProfile;
+  memory: ProjectMemoryProfile;
   compatibility: ProjectCompatibilityProfile;
 };
 
@@ -196,6 +208,24 @@ export type ProjectModelUpdateResponse = {
     durationMs: number;
   } | null;
   model: ProjectModelProfile;
+  item: ProjectListItem | null;
+};
+
+export type ProjectMemoryModeUpdateResponse = {
+  ok: boolean;
+  projectId: string;
+  previousMode: ProjectMemoryMode;
+  restartTriggered: boolean;
+  result: {
+    ok: boolean;
+    command: string;
+    exitCode: number | null;
+    signal: string | null;
+    stdout: string;
+    stderr: string;
+    durationMs: number;
+  } | null;
+  memory: ProjectMemoryProfile;
   item: ProjectListItem | null;
 };
 

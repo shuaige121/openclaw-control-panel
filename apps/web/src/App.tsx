@@ -14,6 +14,7 @@ import type {
   ProjectActionName,
   ProjectActionResponse,
   ProjectCompatibilityScanResponse,
+  ProjectMemoryModeUpdateResponse,
   ProjectModelUpdateResponse,
   ProjectUpsertPayload,
   ProjectsResponse,
@@ -82,6 +83,7 @@ export default function App() {
   const [activeProjectAction, setActiveProjectAction] = useState<ProjectActionName | null>(null);
   const [compatibilityScanProjectId, setCompatibilityScanProjectId] = useState<string | null>(null);
   const [modelUpdateProjectId, setModelUpdateProjectId] = useState<string | null>(null);
+  const [memoryUpdateProjectId, setMemoryUpdateProjectId] = useState<string | null>(null);
 
   useEffect(() => {
     const controller = new AbortController();
@@ -467,6 +469,50 @@ export default function App() {
     }
   }
 
+  async function updateProjectMemoryMode(
+    projectId: string,
+    payload: {
+      mode: "normal" | "locked" | "stateless";
+      restartIfRunning: boolean;
+    },
+  ) {
+    setMemoryUpdateProjectId(projectId);
+    setNotice(null);
+
+    try {
+      const response = await requestApi<ProjectMemoryModeUpdateResponse>(
+        `/api/projects/${projectId}/memory-mode`,
+        {
+          method: "PATCH",
+          headers: {
+            Accept: "application/json",
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify(payload),
+        },
+      );
+
+      const restartDetail = response.restartTriggered
+        ? response.result?.ok
+          ? "运行中的项目已经重启。"
+          : `重启失败：${response.result?.stderr || response.result?.stdout || "请查看动作历史。"}`
+        : "项目当前未运行，没有触发重启。";
+
+      setNotice({
+        tone: response.ok ? "success" : "error",
+        text: `${projectId} 记忆策略已切到 ${response.memory.mode}。${restartDetail}`,
+      });
+      reloadProjects(projectId);
+    } catch (error) {
+      setNotice({
+        tone: "error",
+        text: toErrorMessage(error),
+      });
+    } finally {
+      setMemoryUpdateProjectId(null);
+    }
+  }
+
   let sidePanel;
 
   if (panelMode === "create") {
@@ -542,11 +588,13 @@ export default function App() {
           activeAction={activeProjectAction}
           scanningCompatibility={compatibilityScanProjectId === activeProject?.id}
           modelUpdating={modelUpdateProjectId === activeProject?.id}
+          memoryUpdating={memoryUpdateProjectId === activeProject?.id}
           onEdit={openEditPanel}
           onDelete={deleteProject}
           onRunAction={runProjectAction}
           onScanCompatibility={scanProjectCompatibility}
           onUpdateModel={updateProjectModel}
+          onUpdateMemoryMode={updateProjectMemoryMode}
         />
         <ActionHistoryPanel
           title={activeProject ? `${activeProject.name} 最近动作` : "全局最近动作"}

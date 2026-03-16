@@ -2,10 +2,12 @@ import { Router, type NextFunction, type Request, type Response } from "express"
 import { HttpError } from "../lib/http-error";
 import { ActionHistoryService } from "../services/action-history";
 import { executeProjectAction } from "../services/project-command-runner";
+import { readProjectMemoryProfile, updateProjectMemoryMode } from "../services/project-memory-mode";
 import { readProjectModelProfile, updateProjectPrimaryModel } from "../services/project-models";
 import { scanProjectCompatibility } from "../services/project-compatibility";
 import { buildProjectListResponse, probeProjectRuntime } from "../services/project-probe";
 import { type ProjectRegistryService } from "../services/project-registry";
+import type { ProjectMemoryMode } from "../types/project";
 
 type AsyncRouteHandler = (
   request: Request,
@@ -38,6 +40,29 @@ function parseModelUpdateBody(value: unknown): {
 
   return {
     modelRef: modelRef.trim(),
+    restartIfRunning,
+  };
+}
+
+function parseMemoryModeUpdateBody(value: unknown): {
+  mode: ProjectMemoryMode;
+  restartIfRunning: boolean;
+} {
+  if (typeof value !== "object" || value === null || Array.isArray(value)) {
+    throw new HttpError(400, "memory mode update body must be an object.");
+  }
+
+  const payload = value as Record<string, unknown>;
+  const mode = payload.mode;
+  if (mode !== "normal" && mode !== "locked" && mode !== "stateless") {
+    throw new HttpError(400, 'mode must be "normal", "locked", or "stateless".');
+  }
+
+  const restartIfRunning =
+    payload.restartIfRunning === undefined ? true : Boolean(payload.restartIfRunning);
+
+  return {
+    mode,
     restartIfRunning,
   };
 }
@@ -129,6 +154,7 @@ export function createProjectsRouter(options: {
           capabilities: projectRecord.capabilities,
           auth: item.auth,
           model: item.model,
+          memory: item.memory,
           compatibility: projectRecord.compatibility,
         },
         managerAuth: list.managerAuth,
@@ -184,6 +210,59 @@ export function createProjectsRouter(options: {
         restartTriggered: restartResult !== null,
         result: restartResult,
         model,
+        item,
+      });
+    }),
+  );
+
+  projectsRouter.patch(
+    "/:id/memory-mode",
+    handleAsync(async (request, response) => {
+      const project = await registryService.getProject(request.params.id);
+      const { mode, restartIfRunning } = parseMemoryModeUpdateBody(request.body);
+      const update = await updateProjectMemoryMode(project, mode);
+      const runtime = await probeProjectRuntime(project);
+      const restartResult =
+        restartIfRunning && runtime.runtimeStatus === "running"
+          ? await executeProjectAction(project, "restart")
+          : null;
+      const ok = restartResult?.ok ?? true;
+      const memory = await readProjectMemoryProfile(project);
+
+      await actionHistoryService.appendEntry({
+        kind: "project_registry",
+        ok,
+        projects: [
+          {
+            id: project.id,
+            name: project.name,
+          },
+        ],
+        summary: `${project.name} 记忆模式已切到 ${memory.mode}`,
+        detail: [
+          `Memory mode: ${update.previousMode} -> ${memory.mode}.`,
+          restartResult
+            ? `Restart ${restartResult.ok ? "completed" : "failed"} in ${restartResult.durationMs}ms.`
+            : "Project was not running, so no restart was triggered.",
+        ].join(" "),
+        command: restartResult?.command ?? null,
+        stdout: restartResult?.stdout ?? null,
+        stderr: restartResult?.stderr ?? null,
+        durationMs: restartResult?.durationMs ?? null,
+        actionName: "memory_mode_update",
+      });
+
+      const registry = await registryService.readRegistry();
+      const list = await buildProjectListResponse(registry);
+      const item = list.items.find((entry) => entry.id === project.id) ?? null;
+
+      response.json({
+        ok,
+        projectId: project.id,
+        previousMode: update.previousMode,
+        restartTriggered: restartResult !== null,
+        result: restartResult,
+        memory,
         item,
       });
     }),

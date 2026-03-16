@@ -2,6 +2,7 @@ import fs from "node:fs/promises";
 import path from "node:path";
 import crypto from "node:crypto";
 import { HttpError } from "../lib/http-error";
+import { readProjectMemoryProfile } from "./project-memory-mode";
 import type {
   BulkActionProjectResult,
   BulkActionName,
@@ -425,6 +426,13 @@ async function applyProjectAction(
     } else if (request.action === "skills") {
       message = await applySkillAction(project, request.payload);
     } else if (request.action === "memory") {
+      const memoryProfile = await readProjectMemoryProfile(project);
+      if (memoryProfile.mode !== "normal") {
+        throw new HttpError(
+          409,
+          `Project memory mode is ${memoryProfile.mode}; manager memory writes are blocked.`,
+        );
+      }
       message = await applyMemoryAction(project, request.payload);
     } else {
       message = await applyConfigAction(project, request.payload);

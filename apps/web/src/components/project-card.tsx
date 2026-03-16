@@ -91,6 +91,10 @@ export function ProjectCard({
           <dd>{project.model.primaryRef ?? "未显式设置"}</dd>
         </div>
         <div>
+          <dt>Memory</dt>
+          <dd>{project.memory.mode}</dd>
+        </div>
+        <div>
           <dt>Config</dt>
           <dd>{project.paths.configPath}</dd>
         </div>

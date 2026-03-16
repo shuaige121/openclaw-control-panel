@@ -176,6 +176,178 @@ test("project model route writes config, extends allowlist, and restarts running
   assert.equal(history.body.items[0].command, "printf model-restarted");
 });
 
+test("project memory mode route switches between stateless and normal and blocks manager memory writes", async (context) => {
+  const api = await createApiTestContext(context, {
+    projects: [],
+  });
+  const server = http.createServer((request, response) => {
+    if (request.url === "/healthz" || request.url === "/readyz") {
+      response.writeHead(200, {
+        "Content-Type": "application/json",
+      });
+      response.end(JSON.stringify({ ok: true }));
+      return;
+    }
+
+    response.writeHead(200, {
+      "Content-Type": "text/plain",
+    });
+    response.end("ok");
+  });
+
+  await new Promise<void>((resolve) => {
+    server.listen(0, "127.0.0.1", () => resolve());
+  });
+
+  context.after(async () => {
+    await new Promise<void>((resolve, reject) => {
+      server.close((error) => {
+        if (error) {
+          reject(error);
+          return;
+        }
+
+        resolve();
+      });
+    });
+  });
+
+  const address = server.address();
+  if (!address || typeof address === "string") {
+    throw new Error("Expected an ephemeral TCP port.");
+  }
+
+  const project = await createProjectFixture(api.tempDir, {
+    id: "memory-mode-target",
+    gatewayPort: address.port,
+    config: {
+      gateway: {
+        port: address.port,
+      },
+      plugins: {
+        slots: {
+          memory: "memory-lancedb",
+        },
+      },
+      hooks: {
+        internal: {
+          entries: {
+            "session-memory": {
+              enabled: true,
+            },
+          },
+        },
+      },
+      agents: {
+        defaults: {
+          memorySearch: {
+            enabled: true,
+          },
+          compaction: {
+            memoryFlush: {
+              enabled: true,
+            },
+          },
+        },
+      },
+    },
+    lifecycle: {
+      restartCommand: "printf memory-mode-restarted",
+    },
+  });
+
+  await api.request.post("/api/projects").send(project).expect(201);
+
+  const statelessResponse = await api.request
+    .patch("/api/projects/memory-mode-target/memory-mode")
+    .send({
+      mode: "stateless",
+      restartIfRunning: true,
+    })
+    .expect(200);
+
+  assert.equal(statelessResponse.body.ok, true);
+  assert.equal(statelessResponse.body.previousMode, "normal");
+  assert.equal(statelessResponse.body.restartTriggered, true);
+  assert.equal(statelessResponse.body.result.stdout, "memory-mode-restarted");
+  assert.equal(statelessResponse.body.memory.mode, "stateless");
+  assert.equal(statelessResponse.body.memory.canReadMemory, false);
+  assert.equal(statelessResponse.body.memory.canWriteMemory, false);
+
+  const statelessConfig = await api.readProjectConfig("memory-mode-target");
+  const statelessPlugins = expectJsonObject(statelessConfig.plugins);
+  const statelessSlots = expectJsonObject(statelessPlugins.slots);
+  const statelessAgents = expectJsonObject(statelessConfig.agents);
+  const statelessDefaults = expectJsonObject(statelessAgents.defaults);
+  const statelessMemorySearch = expectJsonObject(statelessDefaults.memorySearch);
+  const statelessCompaction = expectJsonObject(statelessDefaults.compaction);
+  const statelessMemoryFlush = expectJsonObject(statelessCompaction.memoryFlush);
+  const statelessHooks = expectJsonObject(statelessConfig.hooks);
+  const statelessInternal = expectJsonObject(statelessHooks.internal);
+  const statelessEntries = expectJsonObject(statelessInternal.entries);
+  const statelessSessionMemory = expectJsonObject(statelessEntries["session-memory"]);
+  const statelessMeta = expectJsonObject(statelessConfig.meta);
+  const managerMeta = expectJsonObject(statelessMeta.openclawManager);
+  const backup = expectJsonObject(managerMeta.memoryModeBackup);
+  const backupPluginSlot = expectJsonObject(backup.pluginSlotMemory);
+
+  assert.equal(statelessSlots.memory, "none");
+  assert.equal(statelessMemorySearch.enabled, false);
+  assert.equal(statelessMemoryFlush.enabled, false);
+  assert.equal(statelessSessionMemory.enabled, false);
+  assert.equal(managerMeta.memoryMode, "stateless");
+  assert.equal(backupPluginSlot.value, "memory-lancedb");
+
+  const blockedMemoryResponse = await api.request
+    .post("/api/bulk/execute")
+    .send({
+      action: "memory",
+      projectIds: ["memory-mode-target"],
+      payload: {
+        mode: "append",
+        blockId: "should-not-write",
+        content: "this write should be blocked",
+      },
+    })
+    .expect(200);
+
+  assert.equal(blockedMemoryResponse.body.ok, false);
+  assert.match(blockedMemoryResponse.body.results[0].message, /memory mode is stateless/i);
+
+  const normalResponse = await api.request
+    .patch("/api/projects/memory-mode-target/memory-mode")
+    .send({
+      mode: "normal",
+      restartIfRunning: false,
+    })
+    .expect(200);
+
+  assert.equal(normalResponse.body.ok, true);
+  assert.equal(normalResponse.body.previousMode, "stateless");
+  assert.equal(normalResponse.body.restartTriggered, false);
+  assert.equal(normalResponse.body.memory.mode, "normal");
+  assert.equal(normalResponse.body.memory.effectivePluginSlot, "memory-lancedb");
+
+  const normalConfig = await api.readProjectConfig("memory-mode-target");
+  const normalPlugins = expectJsonObject(normalConfig.plugins);
+  const normalSlots = expectJsonObject(normalPlugins.slots);
+  const normalAgents = expectJsonObject(normalConfig.agents);
+  const normalDefaults = expectJsonObject(normalAgents.defaults);
+  const normalMemorySearch = expectJsonObject(normalDefaults.memorySearch);
+  const normalCompaction = expectJsonObject(normalDefaults.compaction);
+  const normalMemoryFlush = expectJsonObject(normalCompaction.memoryFlush);
+  const normalHooks = expectJsonObject(normalConfig.hooks);
+  const normalInternal = expectJsonObject(normalHooks.internal);
+  const normalEntries = expectJsonObject(normalInternal.entries);
+  const normalSessionMemory = expectJsonObject(normalEntries["session-memory"]);
+
+  assert.equal(normalSlots.memory, "memory-lancedb");
+  assert.equal(normalMemorySearch.enabled, true);
+  assert.equal(normalMemoryFlush.enabled, true);
+  assert.equal(normalSessionMemory.enabled, true);
+  assert.equal("meta" in normalConfig, false);
+});
+
 test("bulk action route updates files and records bulk history", async (context) => {
   const api = await createApiTestContext(context, {
     projects: [],

@@ -15,6 +15,7 @@ export type ProjectCompatibilityCheckName =
   | "hooks"
   | "skills"
   | "memory";
+export type ProjectMemoryMode = "normal" | "locked" | "stateless";
 
 export interface ProjectAuthProfile {
   mode: ProjectAuthMode;
@@ -75,6 +76,15 @@ export interface ProjectModelProfile {
   configuredModels: ProjectModelOption[];
 }
 
+export interface ProjectMemoryProfile {
+  mode: ProjectMemoryMode;
+  canReadMemory: boolean;
+  canWriteMemory: boolean;
+  effectivePluginSlot: string | null;
+  sessionMemoryHookEnabled: boolean;
+  memoryFlushEnabled: boolean;
+}
+
 export interface ProjectLifecycleCommands {
   startCommand: string;
   stopCommand: string;
@@ -127,6 +137,7 @@ export interface ProjectListItem {
   endpoints: ProjectEndpoints;
   auth: ProjectAuthProfile;
   model: ProjectModelProfile;
+  memory: ProjectMemoryProfile;
   capabilities: ProjectCapabilities;
   compatibility: ProjectCompatibilityProfile;
 }

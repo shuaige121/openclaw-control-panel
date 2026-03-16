@@ -1,5 +1,11 @@
 import { useEffect, useState } from "react";
-import type { BulkIntent, ManagerAuthProfile, ProjectActionName, ProjectListItem } from "../types";
+import type {
+  BulkIntent,
+  ManagerAuthProfile,
+  ProjectActionName,
+  ProjectListItem,
+  ProjectMemoryMode,
+} from "../types";
 
 type ProjectDetailProps = {
   project: ProjectListItem | null;
@@ -10,11 +16,16 @@ type ProjectDetailProps = {
   activeAction: ProjectActionName | null;
   scanningCompatibility: boolean;
   modelUpdating: boolean;
+  memoryUpdating: boolean;
   onEdit: (projectId: string) => void;
   onDelete: (projectId: string) => void;
   onRunAction: (projectId: string, action: ProjectActionName) => void;
   onScanCompatibility: (projectId: string) => void;
   onUpdateModel: (projectId: string, payload: { modelRef: string; restartIfRunning: boolean }) => void;
+  onUpdateMemoryMode: (
+    projectId: string,
+    payload: { mode: ProjectMemoryMode; restartIfRunning: boolean },
+  ) => void;
 };
 
 const bulkDescriptions: Record<BulkIntent, string> = {
@@ -44,6 +55,18 @@ const checkLabel: Record<ProjectListItem["compatibility"]["checks"][number]["nam
   hooks: "Hooks",
   skills: "Skills",
   memory: "Memory",
+};
+
+const memoryModeLabel: Record<ProjectMemoryMode, string> = {
+  normal: "正常记忆",
+  locked: "锁定记忆",
+  stateless: "白纸模式",
+};
+
+const memoryModeDescription: Record<ProjectMemoryMode, string> = {
+  normal: "可读可写。允许记忆插件、自动 memory flush，以及后续沉淀长期记忆。",
+  locked: "只读记忆。允许读已有记忆，但不再新增 session memory 或 compaction memory。",
+  stateless: "完全白纸。既不读记忆，也不写记忆，适合客服机器人或严格无状态 bot。",
 };
 
 function formatLastSeen(value: string | null): string {
@@ -77,24 +100,32 @@ export function ProjectDetail({
   activeAction,
   scanningCompatibility,
   modelUpdating,
+  memoryUpdating,
   onEdit,
   onDelete,
   onRunAction,
   onScanCompatibility,
   onUpdateModel,
+  onUpdateMemoryMode,
 }: ProjectDetailProps) {
   const [modelRef, setModelRef] = useState("");
   const [restartIfRunning, setRestartIfRunning] = useState(true);
+  const [memoryMode, setMemoryMode] = useState<ProjectMemoryMode>("normal");
+  const [restartMemoryIfRunning, setRestartMemoryIfRunning] = useState(true);
 
   useEffect(() => {
     if (!project) {
       setModelRef("");
       setRestartIfRunning(true);
+      setMemoryMode("normal");
+      setRestartMemoryIfRunning(true);
       return;
     }
 
     setModelRef(project.model.primaryRef ?? project.model.configuredModels[0]?.ref ?? "");
     setRestartIfRunning(true);
+    setMemoryMode(project.memory.mode);
+    setRestartMemoryIfRunning(true);
   }, [project]);
 
   if (!project) {
@@ -295,6 +326,50 @@ export function ProjectDetail({
             disabled={modelUpdating || modelRef.trim().length === 0 || activeAction !== null}
           >
             {modelUpdating ? "保存中..." : "保存默认模型"}
+          </button>
+        </div>
+      </section>
+
+      <section className="detail-section">
+        <p className="section-label">记忆策略</p>
+        <div className="callout-box">
+          <strong>当前模式：</strong> {memoryModeLabel[project.memory.mode]}<br />
+          <strong>读取记忆：</strong> {project.memory.canReadMemory ? "允许" : "关闭"}<br />
+          <strong>写入记忆：</strong> {project.memory.canWriteMemory ? "允许" : "关闭"}<br />
+          <strong>Memory Plugin：</strong> {project.memory.effectivePluginSlot ?? "none"}<br />
+          <strong>Session Memory Hook：</strong> {project.memory.sessionMemoryHookEnabled ? "启用" : "关闭"}<br />
+          <strong>Memory Flush：</strong> {project.memory.memoryFlushEnabled ? "启用" : "关闭"}
+        </div>
+        <label className="form-field">
+          <span>记忆模式</span>
+          <select
+            value={memoryMode}
+            onChange={(event) => setMemoryMode(event.target.value as ProjectMemoryMode)}
+            disabled={memoryUpdating}
+          >
+            <option value="normal">正常记忆</option>
+            <option value="locked">锁定记忆</option>
+            <option value="stateless">白纸模式</option>
+          </select>
+        </label>
+        <div className="callout-box callout-box-muted">{memoryModeDescription[memoryMode]}</div>
+        <label className="checkbox-field">
+          <input
+            type="checkbox"
+            checked={restartMemoryIfRunning}
+            onChange={(event) => setRestartMemoryIfRunning(event.target.checked)}
+            disabled={memoryUpdating}
+          />
+          <span>项目运行中时自动重启，让记忆策略立即生效</span>
+        </label>
+        <div className="panel-action-row">
+          <button
+            type="button"
+            className="ghost-button"
+            onClick={() => onUpdateMemoryMode(project.id, { mode: memoryMode, restartIfRunning: restartMemoryIfRunning })}
+            disabled={memoryUpdating || activeAction !== null || memoryMode === project.memory.mode}
+          >
+            {memoryUpdating ? "保存中..." : "保存记忆策略"}
           </button>
         </div>
       </section>
