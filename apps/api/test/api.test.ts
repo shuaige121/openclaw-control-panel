@@ -451,7 +451,7 @@ test("project template route exposes catalog and applies sandboxed template to c
   const docker = expectJsonObject(sandbox.docker);
 
   assert.equal(sandbox.mode, "all");
-  assert.equal(sandbox.backend, "docker");
+  assert.equal("backend" in sandbox, false);
   assert.equal(sandbox.scope, "session");
   assert.equal(sandbox.workspaceAccess, "none");
   assert.equal(docker.network, "none");

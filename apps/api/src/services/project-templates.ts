@@ -56,7 +56,7 @@ const PROJECT_TEMPLATE_CATALOG: ProjectTemplateDefinition[] = [
     name: "沙箱隔离 Bot",
     summary: "所有会话走 Docker 沙箱，默认无工作区写权限。",
     description:
-      "适合要挂更多工具、但希望把工具执行隔离在容器里的 bot。默认使用 Docker backend、session scope、workspaceAccess=none。",
+      "适合要挂更多工具、但希望把工具执行隔离在容器里的 bot。默认走当前 OpenClaw 的 Docker 沙箱、session scope、workspaceAccess=none。",
     recommendedTags: ["sandbox", "isolated"],
     memoryMode: "normal",
     sandbox: {
@@ -66,7 +66,7 @@ const PROJECT_TEMPLATE_CATALOG: ProjectTemplateDefinition[] = [
       workspaceAccess: "none",
     },
     notes: [
-      "会把 sandbox.mode 设为 all，backend 设为 docker。",
+      "会把 sandbox.mode 设为 all，并沿用当前版本的默认 Docker sandbox 后端。",
       '默认把 docker.network 设为 "none"，更偏安全；需要联网工具时再单独放开。',
       "Docker 镜像默认沿用项目现有配置，没有则保持 OpenClaw 默认值。",
     ],
@@ -111,7 +111,6 @@ export async function applyProjectTemplate(
     await updateProjectMemoryMode(project, "normal");
     await updateProjectSandboxProfile(project, {
       mode: "all",
-      backend: "docker",
       scope: "session",
       workspaceAccess: "none",
       dockerNetwork: "none",
