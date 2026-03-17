@@ -1,178 +1,190 @@
-# OpenClaw Manager
+<div align="center">
 
-OpenClaw Manager is a multi-project control plane for teams running more than one raw OpenClaw gateway.
+<img src="assets/banner.svg" alt="OpenClaw Manager" width="100%"/>
 
-It gives you one place to:
+<br/>
 
-- register OpenClaw projects by path, config, gateway, and lifecycle command
-- see live runtime and health status across many projects
-- start, stop, and restart projects without leaving the dashboard
-- run bulk hook, skill, memory, and config operations
-- jump straight into each project's native OpenClaw Control UI for deep single-instance work
+[![Node](https://img.shields.io/badge/node-%3E%3D22-339933?style=flat-square&logo=node.js&logoColor=white)](https://nodejs.org/)
+[![Express](https://img.shields.io/badge/API-Express-000000?style=flat-square&logo=express)](https://expressjs.com/)
+[![React](https://img.shields.io/badge/UI-React_18-61DAFB?style=flat-square&logo=react&logoColor=black)](https://react.dev/)
+[![TypeScript](https://img.shields.io/badge/lang-TypeScript-3178C6?style=flat-square&logo=typescript&logoColor=white)](https://typescriptlang.org/)
+[![License: MIT](https://img.shields.io/badge/license-MIT-blue?style=flat-square)](LICENSE)
 
-OpenClaw already ships a strong single-instance UI. OpenClaw Manager adds the missing fleet layer.
+</div>
 
-## Why this exists
+---
 
-The old fleet-style tool mixed together three different concerns:
+## Philosophy
 
-- project inventory
-- lifecycle orchestration
-- channel-specific modeling
+There is a recurring temptation in software: **make the one thing do everything.**
 
-This rewrite intentionally narrows the product boundary.
+One bot. One context. One massive prompt carrying the weight of ops, coding, research, customer service, experiments, and whatever you bolted on last Tuesday. It works — until it doesn't. The context window fills with irrelevant baggage. Tools meant for one task bleed into another. The bot becomes a bureaucrat: aware of everything, good at nothing.
 
-OpenClaw Manager does **not** try to replace OpenClaw's own config editor, chat UI, skills console, or device pairing flows.
-Instead, it focuses on the operational layer that shows up once you run multiple OpenClaw projects at the same time.
+This is not a new problem. Unix solved it forty years ago.
 
-## What it does well
+> *Do one thing and do it well.* — Doug McIlroy, 1978
 
-- One project row equals one raw OpenClaw project
-- Live probes beat stale database state
-- Batch operations stay file-based and predictable
-- Per-project auth can inherit a manager default or override locally
-- Deep single-instance configuration stays inside the project's own OpenClaw UI
+OpenClaw Manager applies this principle to AI agents.
 
-## Product model
+Instead of one overloaded bot, you run many. Each [OpenClaw](https://github.com/openclaw/openclaw) instance carries one responsibility, one tool surface, one slice of reality. **The manager does not unify them. It keeps them apart — observable, operable, and sovereign.**
 
-- One manager record = one OpenClaw project
-- One OpenClaw project = one config file, one workspace, one gateway, one lifecycle strategy
-- Manager handles fleet-wide actions
-- Each project's Control UI handles deep, single-instance operations
+## The Worldline Model
 
-## Features
+We borrow a term from physics.
 
-### Current
+A **worldline** is the path a particle traces through spacetime — unique, continuous, non-intersecting. In the same way, each OpenClaw project traces its own path: its own memory, its own tools, its own model, its own conversation history.
 
-- JSON registry for projects and default downstream auth
-- Project CRUD
-- Live TCP + `/healthz` + `/readyz` probing
-- Lifecycle actions: `start`, `stop`, `restart`
-- Bulk actions for hooks, skills, memory, and config patch
-- Compatibility scanning for mixed OpenClaw layouts
-- Persisted action history
-- React dashboard with cards, detail panel, multi-select, and bulk action entry points
+<div align="center">
+<br/>
+<img src="assets/architecture.svg" alt="Architecture" width="100%"/>
+<br/><br/>
+</div>
 
-### In progress / planned
+Worldlines do not merge. That is the point.
 
-- Model/provider switching in the manager UI
-- First-class hook and skill inventories
-- Plugin and tool-policy management
-- Access control hardening for LAN / WireGuard deployments
-- Manager-specific Telegram bot commands
+When you want to experiment, you don't add an `if` branch to your production bot. You spin up a new worldline. When the experiment fails, nothing else is contaminated. When it succeeds, it's already isolated and ready to promote.
 
-## Architecture
+The manager watches the worldlines. It does not live inside them.
 
-```text
-apps/api  -> Express API, registry, probes, lifecycle actions, bulk actions
-apps/web  -> React dashboard shell
-data/     -> local runtime state (gitignored) + example files
-docs/     -> rewrite rationale, upstream findings, marketing notes
-```
+## Capabilities
 
-## Local development
+<table>
+<tr>
+<td width="50%">
+
+**$\color{#58a6ff}{\textsf{See}}$** — Live Health Probes
+
+TCP + `/healthz` + `/readyz` across all projects. Runtime truth beats database truth.
+
+</td>
+<td width="50%">
+
+**$\color{#7ee787}{\textsf{Act}}$** — Lifecycle Control
+
+Start, stop, restart any worldline. One dashboard, many organisms.
+
+</td>
+</tr>
+<tr>
+<td>
+
+**$\color{#d2a8ff}{\textsf{Change}}$** — Bulk Operations
+
+Push hooks, skills, memory patches, config changes across projects at scale.
+
+</td>
+<td>
+
+**$\color{#f0883e}{\textsf{Tune}}$** — Model Switching
+
+Change the default model per project with optional auto-restart.
+
+</td>
+</tr>
+<tr>
+<td>
+
+**$\color{#79c0ff}{\textsf{Enter}}$** — Deep Links
+
+Jump into each project's native OpenClaw Control UI for single-instance work.
+
+</td>
+<td>
+
+**$\color{#ff7b72}{\textsf{Remote}}$** — Telegram Bot
+
+`/projects` `/status` `/start` `/stop` `/restart` — operate from anywhere.
+
+</td>
+</tr>
+</table>
+
+## Quick Start
 
 ```bash
+git clone https://github.com/shuaige121/openclaw-manager.git
+cd openclaw-manager
 npm install
 npm run dev
 ```
 
-By default:
+> [!TIP]
+> **API** → `http://localhost:3000` &nbsp;&nbsp;|&nbsp;&nbsp; **Dashboard** → `http://localhost:5173`
+>
+> After `npm run build`, the API serves the dashboard on port 3000.
 
-- API runs on `0.0.0.0:3000`
-- Vite dev server runs on `0.0.0.0:5173`
+## Configuration
 
-After `npm run build`, the API serves the built web app on the same port.
-
-## Access control
-
-The manager can be restricted by client IP with:
-
-```bash
-MANAGER_ALLOWED_IPS=127.0.0.1,::1,192.168.7.6
-```
-
-Exact IPs and IPv4 CIDR entries are supported.
-If you deploy behind a trusted reverse proxy, also set:
+<details>
+<summary>&nbsp;🔒&nbsp; <b>Access Control</b> — who can observe the worldlines</summary>
+<br/>
 
 ```bash
-MANAGER_TRUST_PROXY=1
+MANAGER_ALLOWED_IPS=127.0.0.1,::1,192.168.7.0/24
+MANAGER_TRUST_PROXY=1  # behind a reverse proxy
 ```
 
-## Manager Telegram bot
+Supports exact IPs and IPv4 CIDR notation.
 
-An optional manager-specific Telegram command bot can run inside the API process.
+</details>
 
-Required environment variables:
+<details>
+<summary>&nbsp;🤖&nbsp; <b>Telegram Bot</b> — remote observation and control</summary>
+<br/>
 
 ```bash
 MANAGER_TELEGRAM_BOT_TOKEN=123456:token
 MANAGER_TELEGRAM_ALLOWED_USER_IDS=7624953278
 ```
 
-Optional:
+Commands: `/projects` `/status <id>` `/start <id>` `/stop <id>` `/restart <id>` `/scan <id>`
 
-```bash
-MANAGER_TELEGRAM_API_BASE_URL=https://api.telegram.org
-MANAGER_TELEGRAM_POLL_TIMEOUT_SECONDS=25
-```
+</details>
 
-Current bot commands:
+<details>
+<summary>&nbsp;💾&nbsp; <b>Runtime Data</b> — the manager's own memory</summary>
+<br/>
 
-- `/projects`
-- `/status <projectId>`
-- `/start <projectId>`
-- `/stop <projectId>`
-- `/restart <projectId>`
-- `/scan <projectId>`
-
-## Runtime data
-
-Runtime registry and history files are intentionally **gitignored**.
-
-- local runtime registry: `data/projects.json`
-- local action history: `data/action-history.json`
-- examples: `data/projects.example.json`, `data/action-history.example.json`
-
-For a fresh checkout you can copy the examples if you want to pre-seed local state:
+Registry and action history live in `data/` (gitignored). Pre-seed from examples:
 
 ```bash
 cp data/projects.example.json data/projects.json
 cp data/action-history.example.json data/action-history.json
 ```
 
-If those files are missing, the manager will create local runtime files on first write.
+Files are auto-created on first write if missing.
 
-## Scripts
+</details>
+
+## Development
+
+Requires **Node.js >= 22**.
 
 ```bash
-npm run typecheck
-npm run test
-npm run build
+npm run dev         # concurrent API + Vite dev server
+npm run typecheck   # type check both workspaces
+npm run test        # API tests
+npm run build       # production build
 ```
 
-## Deployment notes
+## On Simplicity
 
-- Keep manager auth separate from downstream OpenClaw gateway auth
-- Prefer per-project gateways instead of one shared giant instance
-- Keep project-specific channels, plugins, and deep config inside OpenClaw itself
-- If you expose the manager on LAN or WireGuard, add an allowlist or upstream access control layer first
+> *Perfection is achieved, not when there is nothing more to add, but when there is nothing left to take away.*
+>
+> — Antoine de Saint-Exupéry
 
-## GitHub and marketing
+The manager is intentionally thin. It does not aspire to become the thing it manages. It holds the registry, probes the health, executes the commands, and gets out of the way.
 
-Additional positioning, SEO targets, repo copy, and launch messaging live in [docs/marketing.md](docs/marketing.md).
+The depth belongs to each worldline. The breadth belongs to the manager.
 
-## Repo status
+Mixing them is how software dies.
 
-This repo is already running as a working internal manager, not just a mockup.
-The current baseline passes:
+---
 
-- `npm run typecheck`
-- `npm run test`
-- `npm run build`
+<div align="center">
 
-## Related docs
+**MIT License**
 
-- [rewrite-plan.md](docs/rewrite-plan.md)
-- [upstream-findings.md](docs/upstream-findings.md)
-- [marketing.md](docs/marketing.md)
+*Separate the concerns. Observe the worldlines. Keep it simple.*
+
+</div>

@@ -1,0 +1,119 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 900 420">
+  <defs>
+    <linearGradient id="bg2" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" style="stop-color:#0d1117"/>
+      <stop offset="100%" style="stop-color:#161b22"/>
+    </linearGradient>
+    <filter id="g2">
+      <feGaussianBlur stdDeviation="2" result="blur"/>
+      <feMerge><feMergeNode in="blur"/><feMergeNode in="SourceGraphic"/></feMerge>
+    </filter>
+    <linearGradient id="manager-fill" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" style="stop-color:#1a1e2e"/>
+      <stop offset="100%" style="stop-color:#161b22"/>
+    </linearGradient>
+    <linearGradient id="bot-blue" x1="0%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%" style="stop-color:#1a2332"/>
+      <stop offset="100%" style="stop-color:#161b22"/>
+    </linearGradient>
+    <linearGradient id="bot-purple" x1="0%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%" style="stop-color:#221a33"/>
+      <stop offset="100%" style="stop-color:#161b22"/>
+    </linearGradient>
+    <linearGradient id="bot-green" x1="0%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%" style="stop-color:#1a2a1a"/>
+      <stop offset="100%" style="stop-color:#161b22"/>
+    </linearGradient>
+    <linearGradient id="bot-orange" x1="0%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%" style="stop-color:#2a221a"/>
+      <stop offset="100%" style="stop-color:#161b22"/>
+    </linearGradient>
+  </defs>
+
+  <!-- Background -->
+  <rect width="900" height="420" fill="url(#bg2)" rx="12"/>
+
+  <!-- Manager box -->
+  <rect x="250" y="30" width="400" height="110" rx="10" fill="url(#manager-fill)" stroke="#30363d" stroke-width="1.5"/>
+  <rect x="250" y="30" width="400" height="110" rx="10" fill="none" stroke="#58a6ff" stroke-width="0.5" opacity="0.3"/>
+
+  <!-- Manager icon + title -->
+  <text x="310" y="70" font-family="'Segoe UI', system-ui, sans-serif" font-size="14" font-weight="700" fill="#58a6ff">OpenClaw Manager</text>
+  <text x="310" y="92" font-family="'Segoe UI', system-ui, sans-serif" font-size="11" fill="#6e7681">the observer, not the actor</text>
+
+  <!-- Manager inner labels -->
+  <rect x="310" y="104" width="65" height="22" rx="4" fill="#161b22" stroke="#30363d" stroke-width="0.8"/>
+  <text x="342" y="119" text-anchor="middle" font-family="monospace" font-size="10" fill="#79c0ff">Express</text>
+  <rect x="385" y="104" width="55" height="22" rx="4" fill="#161b22" stroke="#30363d" stroke-width="0.8"/>
+  <text x="412" y="119" text-anchor="middle" font-family="monospace" font-size="10" fill="#79c0ff">React</text>
+  <rect x="450" y="104" width="80" height="22" rx="4" fill="#161b22" stroke="#30363d" stroke-width="0.8"/>
+  <text x="490" y="119" text-anchor="middle" font-family="monospace" font-size="10" fill="#79c0ff">Telegram</text>
+
+  <!-- Connection lines with glow -->
+  <g filter="url(#g2)">
+    <!-- Left line -->
+    <line x1="310" y1="140" x2="145" y2="230" stroke="#58a6ff" stroke-width="1" opacity="0.5"/>
+    <circle cx="145" cy="230" r="3" fill="#58a6ff" opacity="0.7"/>
+
+    <!-- Center-left line -->
+    <line x1="390" y1="140" x2="345" y2="230" stroke="#bc8cff" stroke-width="1" opacity="0.5"/>
+    <circle cx="345" cy="230" r="3" fill="#bc8cff" opacity="0.7"/>
+
+    <!-- Center-right line -->
+    <line x1="500" y1="140" x2="545" y2="230" stroke="#7ee787" stroke-width="1" opacity="0.5"/>
+    <circle cx="545" cy="230" r="3" fill="#7ee787" opacity="0.7"/>
+
+    <!-- Right line -->
+    <line x1="580" y1="140" x2="745" y2="230" stroke="#f0883e" stroke-width="1" opacity="0.5"/>
+    <circle cx="745" cy="230" r="3" fill="#f0883e" opacity="0.7"/>
+  </g>
+
+  <!-- Labels: "observe" -->
+  <text x="210" y="188" font-family="Georgia, serif" font-style="italic" font-size="10" fill="#484f58" transform="rotate(-28, 210, 188)">observe</text>
+  <text x="350" y="188" font-family="Georgia, serif" font-style="italic" font-size="10" fill="#484f58" transform="rotate(-10, 350, 188)">observe</text>
+  <text x="530" y="188" font-family="Georgia, serif" font-style="italic" font-size="10" fill="#484f58" transform="rotate(10, 530, 188)">observe</text>
+  <text x="670" y="188" font-family="Georgia, serif" font-style="italic" font-size="10" fill="#484f58" transform="rotate(28, 670, 188)">observe</text>
+
+  <!-- Bot 1: Ops -->
+  <rect x="60" y="230" width="170" height="140" rx="8" fill="url(#bot-blue)" stroke="#58a6ff" stroke-width="1" opacity="0.9"/>
+  <text x="90" y="260" font-size="18">⚙️</text>
+  <text x="115" y="260" font-family="'Segoe UI', system-ui, sans-serif" font-size="13" font-weight="600" fill="#c9d1d9">ops</text>
+  <text x="90" y="282" font-family="monospace" font-size="10" fill="#484f58">:18789</text>
+  <line x1="80" y1="295" x2="210" y2="295" stroke="#21262d" stroke-width="0.8"/>
+  <text x="90" y="315" font-family="'Segoe UI', system-ui, sans-serif" font-size="10" fill="#6e7681">monitoring</text>
+  <text x="90" y="332" font-family="'Segoe UI', system-ui, sans-serif" font-size="10" fill="#6e7681">alerting</text>
+  <text x="90" y="349" font-family="'Segoe UI', system-ui, sans-serif" font-size="10" fill="#6e7681">infra tools</text>
+
+  <!-- Bot 2: Code -->
+  <rect x="260" y="230" width="170" height="140" rx="8" fill="url(#bot-purple)" stroke="#bc8cff" stroke-width="1" opacity="0.9"/>
+  <text x="290" y="260" font-size="18">💻</text>
+  <text x="315" y="260" font-family="'Segoe UI', system-ui, sans-serif" font-size="13" font-weight="600" fill="#c9d1d9">code</text>
+  <text x="290" y="282" font-family="monospace" font-size="10" fill="#484f58">:18790</text>
+  <line x1="280" y1="295" x2="410" y2="295" stroke="#21262d" stroke-width="0.8"/>
+  <text x="290" y="315" font-family="'Segoe UI', system-ui, sans-serif" font-size="10" fill="#6e7681">github tools</text>
+  <text x="290" y="332" font-family="'Segoe UI', system-ui, sans-serif" font-size="10" fill="#6e7681">code review</text>
+  <text x="290" y="349" font-family="'Segoe UI', system-ui, sans-serif" font-size="10" fill="#6e7681">Opus model</text>
+
+  <!-- Bot 3: Research -->
+  <rect x="460" y="230" width="170" height="140" rx="8" fill="url(#bot-green)" stroke="#7ee787" stroke-width="1" opacity="0.9"/>
+  <text x="490" y="260" font-size="18">🔬</text>
+  <text x="515" y="260" font-family="'Segoe UI', system-ui, sans-serif" font-size="13" font-weight="600" fill="#c9d1d9">research</text>
+  <text x="490" y="282" font-family="monospace" font-size="10" fill="#484f58">:18791</text>
+  <line x1="480" y1="295" x2="610" y2="295" stroke="#21262d" stroke-width="0.8"/>
+  <text x="490" y="315" font-family="'Segoe UI', system-ui, sans-serif" font-size="10" fill="#6e7681">web search</text>
+  <text x="490" y="332" font-family="'Segoe UI', system-ui, sans-serif" font-size="10" fill="#6e7681">RAG tools</text>
+  <text x="490" y="349" font-family="'Segoe UI', system-ui, sans-serif" font-size="10" fill="#6e7681">Sonnet model</text>
+
+  <!-- Bot 4: Experiment -->
+  <rect x="660" y="230" width="170" height="140" rx="8" fill="url(#bot-orange)" stroke="#f0883e" stroke-width="1" opacity="0.9"/>
+  <text x="690" y="260" font-size="18">🧪</text>
+  <text x="715" y="260" font-family="'Segoe UI', system-ui, sans-serif" font-size="13" font-weight="600" fill="#c9d1d9">experiment</text>
+  <text x="690" y="282" font-family="monospace" font-size="10" fill="#484f58">:18792</text>
+  <line x1="680" y1="295" x2="810" y2="295" stroke="#21262d" stroke-width="0.8"/>
+  <text x="690" y="315" font-family="'Segoe UI', system-ui, sans-serif" font-size="10" fill="#6e7681">sandbox</text>
+  <text x="690" y="332" font-family="'Segoe UI', system-ui, sans-serif" font-size="10" fill="#6e7681">staging</text>
+  <text x="690" y="349" font-family="'Segoe UI', system-ui, sans-serif" font-size="10" fill="#6e7681">disposable</text>
+
+  <!-- Bottom note -->
+  <text x="450" y="403" text-anchor="middle" font-family="Georgia, serif" font-style="italic" font-size="11" fill="#484f58">each worldline is sovereign — the manager observes, it does not govern</text>
+</svg>
