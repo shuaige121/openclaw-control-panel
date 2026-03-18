@@ -27,6 +27,7 @@
         "mode": "inherit_manager"
       },
       "lifecycle": {
+        "mode": "custom_commands",
         "startCommand": "pm2 start openclaw-main",
         "stopCommand": "pm2 stop openclaw-main",
         "restartCommand": "pm2 restart openclaw-main"

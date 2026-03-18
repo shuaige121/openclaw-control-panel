@@ -1,3 +1,4 @@
+import path from "node:path";
 import { Router, type NextFunction, type Request, type Response } from "express";
 import { HttpError } from "../lib/http-error";
 import { ActionHistoryService } from "../services/action-history";
@@ -98,6 +99,7 @@ export function createProjectsRouter(options: {
   const projectsRouter = Router();
   const registryService = options.registryService;
   const actionHistoryService = options.actionHistoryService ?? new ActionHistoryService();
+  const runtimeDir = path.join(path.dirname(registryService.getRegistryPath()), "runtime");
 
   projectsRouter.get(
     "/",
@@ -206,7 +208,9 @@ export function createProjectsRouter(options: {
       const runtime = await probeProjectRuntime(project);
       const restartResult =
         restartIfRunning && runtime.runtimeStatus === "running"
-          ? await executeProjectAction(project, "restart")
+          ? await executeProjectAction(project, "restart", {
+              runtimeDir,
+            })
           : null;
       const ok = restartResult?.ok ?? true;
       const model = await readProjectModelProfile(project);
@@ -259,7 +263,9 @@ export function createProjectsRouter(options: {
       const runtime = await probeProjectRuntime(project);
       const restartResult =
         restartIfRunning && runtime.runtimeStatus === "running"
-          ? await executeProjectAction(project, "restart")
+          ? await executeProjectAction(project, "restart", {
+              runtimeDir,
+            })
           : null;
       const ok = restartResult?.ok ?? true;
       const memory = await readProjectMemoryProfile(project);
@@ -312,7 +318,9 @@ export function createProjectsRouter(options: {
       const runtime = await probeProjectRuntime(project);
       const restartResult =
         restartIfRunning && runtime.runtimeStatus === "running"
-          ? await executeProjectAction(project, "restart")
+          ? await executeProjectAction(project, "restart", {
+              runtimeDir,
+            })
           : null;
       const ok = restartResult?.ok ?? true;
 

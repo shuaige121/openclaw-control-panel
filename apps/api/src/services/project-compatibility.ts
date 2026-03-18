@@ -1,6 +1,7 @@
 import fs from "node:fs/promises";
 import path from "node:path";
 import { buildProjectEndpoints, probeHttpUrl, probeTcpPort } from "./project-probe";
+import { inspectManagedOpenClawRuntime } from "./project-managed-openclaw";
 import type {
   ProjectCompatibilityCheck,
   ProjectCompatibilityCheckName,
@@ -178,19 +179,38 @@ function deriveReason(status: ProjectCompatibilityStatus, checks: ProjectCompati
 export async function scanProjectCompatibility(
   project: StoredProjectRecord,
 ): Promise<ProjectCompatibilityProfile> {
-  const [rootExists, workspaceExists, configResult, controlUiMarker, liveGateway] = await Promise.all([
+  const [
+    rootExists,
+    workspaceExists,
+    configResult,
+    controlUiMarker,
+    liveGateway,
+    managedLifecycle,
+  ] = await Promise.all([
     pathExists(project.paths.rootPath),
     pathExists(project.paths.workspacePath),
     readProjectConfig(project.paths.configPath),
     findControlUiMarker(project.paths.rootPath),
     probeLiveGateway(project),
+    project.lifecycle.mode === "managed_openclaw"
+      ? inspectManagedOpenClawRuntime(project)
+      : Promise.resolve({
+          supported: [
+            project.lifecycle.startCommand,
+            project.lifecycle.stopCommand,
+            project.lifecycle.restartCommand,
+          ].every((command) => command.trim().length > 0),
+          message: [
+            project.lifecycle.startCommand,
+            project.lifecycle.stopCommand,
+            project.lifecycle.restartCommand,
+          ].every((command) => command.trim().length > 0)
+            ? "Start, stop, and restart commands are all present."
+            : "One or more lifecycle commands are missing.",
+        }),
   ]);
 
-  const lifecycleReady = [
-    project.lifecycle.startCommand,
-    project.lifecycle.stopCommand,
-    project.lifecycle.restartCommand,
-  ].every((command) => command.trim().length > 0);
+  const lifecycleReady = managedLifecycle.supported;
   const configPatchReady = configResult.config !== null;
   const hooksEntries = readObjectAtPath(configResult.config, ["hooks", "internal", "entries"]);
   const skillsEntries = readObjectAtPath(configResult.config, ["skills", "entries"]);
@@ -201,9 +221,7 @@ export async function scanProjectCompatibility(
         return createCheck(
           name,
           lifecycleReady,
-          lifecycleReady
-            ? "Start, stop, and restart commands are all present."
-            : "One or more lifecycle commands are missing.",
+          managedLifecycle.message,
         );
       case "gateway_probe":
         if (liveGateway.portOpen) {

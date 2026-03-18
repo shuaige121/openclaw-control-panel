@@ -12,8 +12,10 @@ import type {
   ProjectCompatibilityProfile,
   ProjectCompatibilityStatus,
   ProjectGatewayConfig,
+  ProjectGatewayBindMode,
   ProjectGatewayProtocol,
-  ProjectLifecycleCommands,
+  ProjectLifecycle,
+  ProjectLifecycleMode,
   ProjectPaths,
   ProjectRegistryAuth,
   ProjectRegistryData,
@@ -87,6 +89,25 @@ function expectPort(value: unknown, fieldName: string): number {
 function expectProtocol(value: unknown, fieldName: string): ProjectGatewayProtocol {
   if (value !== "http" && value !== "https") {
     throw new HttpError(400, `${fieldName} must be "http" or "https".`);
+  }
+
+  return value;
+}
+
+function expectLifecycleMode(value: unknown, fieldName: string): ProjectLifecycleMode {
+  if (value !== "custom_commands" && value !== "managed_openclaw") {
+    throw new HttpError(
+      400,
+      `${fieldName} must be "custom_commands" or "managed_openclaw".`,
+    );
+  }
+
+  return value;
+}
+
+function expectGatewayBindMode(value: unknown, fieldName: string): ProjectGatewayBindMode {
+  if (value !== "loopback" && value !== "lan") {
+    throw new HttpError(400, `${fieldName} must be "loopback" or "lan".`);
   }
 
   return value;
@@ -248,25 +269,76 @@ function parseGateway(value: unknown, fieldName: string): ProjectGatewayConfig {
   };
 }
 
+function parsePositiveInteger(
+  value: unknown,
+  fieldName: string,
+  minimum = 1,
+): number {
+  if (typeof value !== "number" || !Number.isInteger(value) || value < minimum) {
+    throw new HttpError(400, `${fieldName} must be an integer greater than or equal to ${minimum}.`);
+  }
+
+  return value;
+}
+
 function parseLifecycle(
   value: unknown,
   fieldName: string,
-  defaults?: ProjectLifecycleCommands,
-): ProjectLifecycleCommands {
+  defaults?: ProjectLifecycle,
+): ProjectLifecycle {
   const object = value === undefined ? {} : expectObject(value, fieldName);
+  const mode =
+    object.mode === undefined
+      ? defaults?.mode ?? "custom_commands"
+      : expectLifecycleMode(object.mode, `${fieldName}.mode`);
+
+  if (mode === "managed_openclaw") {
+    const current = defaults?.mode === "managed_openclaw" ? defaults : undefined;
+
+    return {
+      mode,
+      nodePath:
+        object.nodePath === undefined
+          ? current?.nodePath ?? null
+          : object.nodePath === null
+            ? null
+            : expectRequiredString(object.nodePath, `${fieldName}.nodePath`),
+      cliPath:
+        object.cliPath === undefined
+          ? current?.cliPath ?? null
+          : object.cliPath === null
+            ? null
+            : expectRequiredString(object.cliPath, `${fieldName}.cliPath`),
+      bind:
+        object.bind === undefined
+          ? current?.bind ?? "loopback"
+          : expectGatewayBindMode(object.bind, `${fieldName}.bind`),
+      allowUnconfigured:
+        object.allowUnconfigured === undefined
+          ? current?.allowUnconfigured ?? true
+          : expectBoolean(object.allowUnconfigured, `${fieldName}.allowUnconfigured`),
+      startupTimeoutMs:
+        object.startupTimeoutMs === undefined
+          ? current?.startupTimeoutMs ?? 15_000
+          : parsePositiveInteger(object.startupTimeoutMs, `${fieldName}.startupTimeoutMs`, 1000),
+    };
+  }
+
+  const current = defaults?.mode === "custom_commands" ? defaults : undefined;
 
   return {
+    mode,
     startCommand:
       object.startCommand === undefined
-        ? defaults?.startCommand ?? ""
+        ? current?.startCommand ?? ""
         : expectString(object.startCommand, `${fieldName}.startCommand`),
     stopCommand:
       object.stopCommand === undefined
-        ? defaults?.stopCommand ?? ""
+        ? current?.stopCommand ?? ""
         : expectString(object.stopCommand, `${fieldName}.stopCommand`),
     restartCommand:
       object.restartCommand === undefined
-        ? defaults?.restartCommand ?? ""
+        ? current?.restartCommand ?? ""
         : expectString(object.restartCommand, `${fieldName}.restartCommand`),
   };
 }

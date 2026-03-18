@@ -1,7 +1,12 @@
 import http from "node:http";
 import assert from "node:assert/strict";
 import test from "node:test";
-import { createApiTestContext, createProjectFixture, expectJsonObject } from "./helpers";
+import {
+  createApiTestContext,
+  createFakeOpenClawCli,
+  createProjectFixture,
+  expectJsonObject,
+} from "./helpers";
 
 test("GET /api/projects returns registry-backed items and stopped probe status", async (context) => {
   const api = await createApiTestContext(context, {
@@ -75,6 +80,54 @@ test("project action route executes lifecycle command and records stdout in hist
   assert.equal(history.body.items[0].actionName, "start");
   assert.match(history.body.items[0].command, /printf action-started/);
   assert.equal(history.body.items[0].stdout, "action-started");
+});
+
+test("managed OpenClaw lifecycle starts and stops a detached gateway process", async (context) => {
+  const api = await createApiTestContext(context, {
+    projects: [],
+  });
+  const fakeCliPath = await createFakeOpenClawCli(api.tempDir);
+  const project = await createProjectFixture(api.tempDir, {
+    id: "managed-target",
+    gatewayPort: 19935,
+    lifecycle: {
+      mode: "managed_openclaw",
+      nodePath: process.execPath,
+      cliPath: fakeCliPath,
+      bind: "loopback",
+      allowUnconfigured: true,
+      startupTimeoutMs: 4000,
+    },
+  });
+
+  await api.request.post("/api/projects").send(project).expect(201);
+
+  const startResponse = await api.request
+    .post("/api/projects/managed-target/actions/start")
+    .expect(200);
+
+  assert.equal(startResponse.body.ok, true);
+  assert.equal(startResponse.body.item.runtimeStatus, "running");
+  assert.equal(startResponse.body.item.healthStatus, "healthy");
+  assert.match(startResponse.body.result.command, /fake-openclaw\.mjs/);
+
+  const listWhileRunning = await api.request.get("/api/projects").expect(200);
+  assert.equal(listWhileRunning.body.items[0].runtimeStatus, "running");
+  assert.equal(listWhileRunning.body.items[0].healthStatus, "healthy");
+
+  const stopResponse = await api.request
+    .post("/api/projects/managed-target/actions/stop")
+    .expect(200);
+
+  assert.equal(stopResponse.body.ok, true);
+  assert.equal(stopResponse.body.item.runtimeStatus, "stopped");
+  assert.equal(stopResponse.body.item.healthStatus, "unknown");
+
+  const history = await api.request.get("/api/actions?projectId=managed-target&limit=5").expect(200);
+  assert.deepEqual(
+    history.body.items.slice(0, 2).map((item: { actionName: string }) => item.actionName),
+    ["stop", "start"],
+  );
 });
 
 test("project model route writes config, extends allowlist, and restarts running projects", async (context) => {

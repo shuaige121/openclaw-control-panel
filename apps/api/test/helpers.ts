@@ -7,7 +7,12 @@ import request from "supertest";
 import { createServer } from "../src/server";
 import { ActionHistoryService } from "../src/services/action-history";
 import { ProjectRegistryService } from "../src/services/project-registry";
-import type { ProjectRegistryData, StoredProjectRecord } from "../src/types/project";
+import type {
+  ProjectCustomCommandLifecycle,
+  ProjectLifecycle,
+  ProjectRegistryData,
+  StoredProjectRecord,
+} from "../src/types/project";
 
 type ProjectFixtureOptions = {
   id: string;
@@ -15,7 +20,7 @@ type ProjectFixtureOptions = {
   description?: string;
   gatewayPort?: number;
   config?: Record<string, unknown>;
-  lifecycle?: Partial<StoredProjectRecord["lifecycle"]>;
+  lifecycle?: ProjectLifecycle | Partial<ProjectCustomCommandLifecycle>;
 };
 
 export type ApiTestContext = {
@@ -26,6 +31,62 @@ export type ApiTestContext = {
   readProjectConfig: (projectId: string) => Promise<Record<string, unknown>>;
   readProjectMemory: (projectId: string) => Promise<string>;
 };
+
+export async function createFakeOpenClawCli(tempDir: string): Promise<string> {
+  const cliPath = path.join(tempDir, "fake-openclaw.mjs");
+  const source = `
+import http from "node:http";
+
+const args = process.argv.slice(2);
+let port = 0;
+let bind = "loopback";
+
+for (let index = 0; index < args.length; index += 1) {
+  const value = args[index];
+  if (value === "--port") {
+    port = Number.parseInt(args[index + 1] ?? "0", 10);
+    index += 1;
+    continue;
+  }
+  if (value === "--bind") {
+    bind = args[index + 1] ?? "loopback";
+    index += 1;
+  }
+}
+
+if (args[0] !== "gateway" || args[1] !== "run" || !Number.isInteger(port) || port <= 0) {
+  console.error("unexpected fake openclaw invocation", args.join(" "));
+  process.exit(2);
+}
+
+const host = bind === "lan" ? "0.0.0.0" : "127.0.0.1";
+const server = http.createServer((request, response) => {
+  if (request.url === "/healthz" || request.url === "/readyz") {
+    response.writeHead(200, { "Content-Type": "application/json" });
+    response.end(JSON.stringify({ ok: true }));
+    return;
+  }
+
+  response.writeHead(200, { "Content-Type": "text/html; charset=utf-8" });
+  response.end("<html><body>fake control ui</body></html>");
+});
+
+server.listen(port, host, () => {
+  console.log("[fake-openclaw] listening", host, port);
+});
+
+process.on("SIGTERM", () => {
+  server.close(() => {
+    process.exit(0);
+  });
+});
+
+setInterval(() => {}, 1000);
+`;
+
+  await writeFile(cliPath, source.trimStart(), "utf8");
+  return cliPath;
+}
 
 function createDefaultConfig(port: number): Record<string, unknown> {
   return {
@@ -54,6 +115,16 @@ export async function createProjectFixture(
   const controlUiMarkerPath = path.join(rootPath, "src", "gateway");
   const gatewayPort = options.gatewayPort ?? 19900;
 
+  const lifecycle =
+    options.lifecycle?.mode === "managed_openclaw"
+      ? options.lifecycle
+      : {
+          mode: "custom_commands" as const,
+          startCommand: options.lifecycle?.startCommand ?? "printf started",
+          stopCommand: options.lifecycle?.stopCommand ?? "printf stopped",
+          restartCommand: options.lifecycle?.restartCommand ?? "printf restarted",
+        };
+
   await mkdir(workspacePath, { recursive: true });
   await mkdir(controlUiMarkerPath, { recursive: true });
   await writeFile(
@@ -81,11 +152,7 @@ export async function createProjectFixture(
     auth: {
       mode: "inherit_manager",
     },
-    lifecycle: {
-      startCommand: options.lifecycle?.startCommand ?? "printf started",
-      stopCommand: options.lifecycle?.stopCommand ?? "printf stopped",
-      restartCommand: options.lifecycle?.restartCommand ?? "printf restarted",
-    },
+    lifecycle,
     capabilities: {
       bulkHooks: true,
       bulkSkills: true,

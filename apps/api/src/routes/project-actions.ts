@@ -1,3 +1,4 @@
+import path from "node:path";
 import { Router, type NextFunction, type Request, type Response } from "express";
 import { HttpError } from "../lib/http-error";
 import { ActionHistoryService } from "../services/action-history";
@@ -33,13 +34,16 @@ export function createProjectActionsRouter(options: {
   const projectActionsRouter = Router({ mergeParams: true });
   const registryService = options.registryService;
   const actionHistoryService = options.actionHistoryService ?? new ActionHistoryService();
+  const runtimeDir = path.join(path.dirname(registryService.getRegistryPath()), "runtime");
 
   projectActionsRouter.post(
     "/:action",
     handleAsync(async (request, response) => {
       const action = parseActionName(request.params.action);
       const project = await registryService.getProject(request.params.id);
-      const commandResult = await executeProjectAction(project, action);
+      const commandResult = await executeProjectAction(project, action, {
+        runtimeDir,
+      });
       await actionHistoryService.appendEntry({
         kind: "project_action",
         ok: commandResult.ok,

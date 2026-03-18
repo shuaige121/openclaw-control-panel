@@ -156,6 +156,21 @@ Files are auto-created on first write if missing.
 
 </details>
 
+<details>
+<summary>&nbsp;🚀&nbsp; <b>Lifecycle Modes</b> — how each worldline boots</summary>
+<br/>
+
+Each project can use one of two runtime models:
+
+- `managed_openclaw`
+  Manager launches `gateway run` directly, keeps a pid/log under `data/runtime/`, and probes until the gateway is really up.
+- `custom_commands`
+  Manager delegates start/stop/restart to your existing PM2, systemd, or shell workflow.
+
+Use `managed_openclaw` for new isolated projects. Keep `custom_commands` for legacy deployments you already trust.
+
+</details>
+
 ## Development
 
 Requires **Node.js >= 22**.

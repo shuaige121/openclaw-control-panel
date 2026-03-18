@@ -3,6 +3,8 @@ export type ProjectHealthStatus = "healthy" | "degraded" | "unknown" | "unhealth
 export type ProjectAuthMode = "inherit_manager" | "custom";
 export type ProjectAuthStrategy = "token" | "password";
 export type ProjectGatewayProtocol = "http" | "https";
+export type ProjectLifecycleMode = "custom_commands" | "managed_openclaw";
+export type ProjectGatewayBindMode = "loopback" | "lan";
 export type BulkIntent = "hooks" | "skills" | "memory" | "config";
 export type ProjectActionName = "start" | "stop" | "restart";
 export type HistoryEntryKind = "project_action" | "bulk_action" | "project_registry";
@@ -156,11 +158,23 @@ export type ProjectGateway = {
   port: number;
 };
 
-export type ProjectLifecycle = {
+export type ProjectCustomLifecycle = {
+  mode: "custom_commands";
   startCommand: string;
   stopCommand: string;
   restartCommand: string;
 };
+
+export type ProjectManagedOpenClawLifecycle = {
+  mode: "managed_openclaw";
+  nodePath: string | null;
+  cliPath: string | null;
+  bind: ProjectGatewayBindMode;
+  allowUnconfigured: boolean;
+  startupTimeoutMs: number;
+};
+
+export type ProjectLifecycle = ProjectCustomLifecycle | ProjectManagedOpenClawLifecycle;
 
 export type ProjectRegistryView = {
   id: string;

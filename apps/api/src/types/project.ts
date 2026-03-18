@@ -6,6 +6,8 @@ export type ProjectGatewayProtocol = "http" | "https";
 export type ProjectActionName = "start" | "stop" | "restart";
 export type BulkActionName = "hooks" | "skills" | "memory" | "config";
 export type HistoryEntryKind = "project_action" | "bulk_action" | "project_registry";
+export type ProjectLifecycleMode = "custom_commands" | "managed_openclaw";
+export type ProjectGatewayBindMode = "loopback" | "lan";
 export type ProjectCompatibilityStatus = "incompatible" | "runtime_only" | "full";
 export type ProjectCompatibilityCheckName =
   | "lifecycle"
@@ -117,11 +119,23 @@ export interface ProjectTemplateDefinition {
   notes: string[];
 }
 
-export interface ProjectLifecycleCommands {
+export interface ProjectCustomCommandLifecycle {
+  mode: "custom_commands";
   startCommand: string;
   stopCommand: string;
   restartCommand: string;
 }
+
+export interface ProjectManagedOpenClawLifecycle {
+  mode: "managed_openclaw";
+  nodePath: string | null;
+  cliPath: string | null;
+  bind: ProjectGatewayBindMode;
+  allowUnconfigured: boolean;
+  startupTimeoutMs: number;
+}
+
+export type ProjectLifecycle = ProjectCustomCommandLifecycle | ProjectManagedOpenClawLifecycle;
 
 export interface StoredAuthSecretProfile {
   strategy: ProjectAuthStrategy;
@@ -145,7 +159,7 @@ export interface StoredProjectRecord {
   tags: string[];
   paths: ProjectPaths;
   auth: ProjectRegistryAuth;
-  lifecycle: ProjectLifecycleCommands;
+  lifecycle: ProjectLifecycle;
   capabilities: ProjectCapabilities;
   compatibility: ProjectCompatibilityProfile;
 }

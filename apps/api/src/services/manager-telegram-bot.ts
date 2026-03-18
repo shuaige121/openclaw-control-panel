@@ -1,3 +1,4 @@
+import path from "node:path";
 import { setTimeout as sleep } from "node:timers/promises";
 import { ActionHistoryService } from "./action-history";
 import { scanProjectCompatibility } from "./project-compatibility";
@@ -142,6 +143,7 @@ export class ManagerTelegramBotService {
   private readonly stateService: ManagerTelegramStateService;
   private readonly apiBaseUrl: string;
   private readonly pollTimeoutSeconds: number;
+  private readonly runtimeDir: string;
   private running = false;
   private loopPromise: Promise<void> | null = null;
 
@@ -153,6 +155,7 @@ export class ManagerTelegramBotService {
     this.stateService = options.stateService ?? new ManagerTelegramStateService();
     this.apiBaseUrl = options.apiBaseUrl ?? "https://api.telegram.org";
     this.pollTimeoutSeconds = options.pollTimeoutSeconds ?? 25;
+    this.runtimeDir = path.join(path.dirname(this.registryService.getRegistryPath()), "runtime");
   }
 
   start(): void {
@@ -336,7 +339,9 @@ export class ManagerTelegramBotService {
     }
 
     const project = await this.registryService.getProject(projectId);
-    const commandResult = await executeProjectAction(project, action);
+    const commandResult = await executeProjectAction(project, action, {
+      runtimeDir: this.runtimeDir,
+    });
 
     await this.actionHistoryService.appendEntry({
       kind: "project_action",

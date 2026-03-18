@@ -80,6 +80,7 @@ export const DEFAULT_PROJECT_REGISTRY: ProjectRegistryData = {
         mode: "inherit_manager",
       },
       lifecycle: {
+        mode: "custom_commands",
         startCommand: "cd /srv/openclaw/projects/main && npm run gateway:start",
         stopCommand: "cd /srv/openclaw/projects/main && npm run gateway:stop",
         restartCommand: "cd /srv/openclaw/projects/main && npm run gateway:restart",
@@ -111,6 +112,7 @@ export const DEFAULT_PROJECT_REGISTRY: ProjectRegistryData = {
         secret: "ops-rescue-demo-token-change-me",
       },
       lifecycle: {
+        mode: "custom_commands",
         startCommand: "cd /srv/openclaw/projects/ops-rescue && npm run gateway:start",
         stopCommand: "cd /srv/openclaw/projects/ops-rescue && npm run gateway:stop",
         restartCommand: "cd /srv/openclaw/projects/ops-rescue && npm run gateway:restart",
@@ -139,6 +141,7 @@ export const DEFAULT_PROJECT_REGISTRY: ProjectRegistryData = {
         mode: "inherit_manager",
       },
       lifecycle: {
+        mode: "custom_commands",
         startCommand: "cd /srv/openclaw/projects/lab-dev && npm run gateway:start",
         stopCommand: "cd /srv/openclaw/projects/lab-dev && npm run gateway:stop",
         restartCommand: "cd /srv/openclaw/projects/lab-dev && npm run gateway:restart",
@@ -170,6 +173,7 @@ export const DEFAULT_PROJECT_REGISTRY: ProjectRegistryData = {
         secret: "qa-shadow-demo-password-change-me",
       },
       lifecycle: {
+        mode: "custom_commands",
         startCommand: "cd /srv/openclaw/projects/qa-shadow && npm run gateway:start",
         stopCommand: "cd /srv/openclaw/projects/qa-shadow && npm run gateway:stop",
         restartCommand: "cd /srv/openclaw/projects/qa-shadow && npm run gateway:restart",

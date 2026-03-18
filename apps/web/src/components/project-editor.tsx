@@ -5,7 +5,9 @@ import type {
   ProjectAuthStrategy,
   ProjectCapabilities,
   ProjectDetailResponse,
+  ProjectGatewayBindMode,
   ProjectGatewayProtocol,
+  ProjectLifecycleMode,
   ProjectTemplateDefinition,
   ProjectTemplateId,
   ProjectUpsertPayload,
@@ -41,9 +43,15 @@ type EditorState = {
   authStrategy: ProjectAuthStrategy;
   authLabel: string;
   authSecret: string;
+  lifecycleMode: ProjectLifecycleMode;
   startCommand: string;
   stopCommand: string;
   restartCommand: string;
+  lifecycleNodePath: string;
+  lifecycleCliPath: string;
+  lifecycleBind: ProjectGatewayBindMode;
+  lifecycleAllowUnconfigured: boolean;
+  lifecycleStartupTimeoutMs: string;
   templateId: ProjectTemplateId;
   applyTemplateAfterCreate: boolean;
   bulkHooks: boolean;
@@ -75,9 +83,15 @@ function createDefaultState(): EditorState {
     authStrategy: "token",
     authLabel: "项目自定义 token",
     authSecret: "",
+    lifecycleMode: "managed_openclaw",
     startCommand: "",
     stopCommand: "",
     restartCommand: "",
+    lifecycleNodePath: "",
+    lifecycleCliPath: "",
+    lifecycleBind: "loopback",
+    lifecycleAllowUnconfigured: true,
+    lifecycleStartupTimeoutMs: "15000",
     templateId: "general",
     applyTemplateAfterCreate: false,
     ...DEFAULT_CAPABILITIES,
@@ -100,9 +114,21 @@ function createStateFromProject(project: ProjectDetailResponse["registry"]): Edi
     authStrategy: project.auth.strategy,
     authLabel: project.auth.label,
     authSecret: "",
-    startCommand: project.lifecycle.startCommand,
-    stopCommand: project.lifecycle.stopCommand,
-    restartCommand: project.lifecycle.restartCommand,
+    lifecycleMode: project.lifecycle.mode,
+    startCommand: project.lifecycle.mode === "custom_commands" ? project.lifecycle.startCommand : "",
+    stopCommand: project.lifecycle.mode === "custom_commands" ? project.lifecycle.stopCommand : "",
+    restartCommand: project.lifecycle.mode === "custom_commands" ? project.lifecycle.restartCommand : "",
+    lifecycleNodePath:
+      project.lifecycle.mode === "managed_openclaw" ? (project.lifecycle.nodePath ?? "") : "",
+    lifecycleCliPath:
+      project.lifecycle.mode === "managed_openclaw" ? (project.lifecycle.cliPath ?? "") : "",
+    lifecycleBind: project.lifecycle.mode === "managed_openclaw" ? project.lifecycle.bind : "loopback",
+    lifecycleAllowUnconfigured:
+      project.lifecycle.mode === "managed_openclaw" ? project.lifecycle.allowUnconfigured : true,
+    lifecycleStartupTimeoutMs:
+      project.lifecycle.mode === "managed_openclaw"
+        ? String(project.lifecycle.startupTimeoutMs)
+        : "15000",
     templateId: "general",
     applyTemplateAfterCreate: false,
     bulkHooks: project.capabilities.bulkHooks,
@@ -171,6 +197,15 @@ export function ProjectEditor({
       return;
     }
 
+    const startupTimeoutMs = Number.parseInt(state.lifecycleStartupTimeoutMs, 10);
+    if (
+      state.lifecycleMode === "managed_openclaw" &&
+      (!Number.isInteger(startupTimeoutMs) || startupTimeoutMs < 1000)
+    ) {
+      setLocalError("托管 OpenClaw 的启动超时至少要 1000ms。");
+      return;
+    }
+
     const payload: ProjectUpsertPayload = {
       id: state.id.trim().toLowerCase(),
       name: state.name.trim(),
@@ -197,11 +232,22 @@ export function ProjectEditor({
               label: state.authLabel.trim(),
               ...(state.authSecret.trim().length > 0 ? { secret: state.authSecret.trim() } : {}),
             },
-      lifecycle: {
-        startCommand: state.startCommand,
-        stopCommand: state.stopCommand,
-        restartCommand: state.restartCommand,
-      },
+      lifecycle:
+        state.lifecycleMode === "managed_openclaw"
+          ? {
+              mode: "managed_openclaw",
+              nodePath: state.lifecycleNodePath.trim() || null,
+              cliPath: state.lifecycleCliPath.trim() || null,
+              bind: state.lifecycleBind,
+              allowUnconfigured: state.lifecycleAllowUnconfigured,
+              startupTimeoutMs,
+            }
+          : {
+              mode: "custom_commands",
+              startCommand: state.startCommand,
+              stopCommand: state.stopCommand,
+              restartCommand: state.restartCommand,
+            },
       capabilities: {
         bulkHooks: state.bulkHooks,
         bulkSkills: state.bulkSkills,
@@ -456,35 +502,107 @@ export function ProjectEditor({
         </section>
 
         <section className="detail-section">
-          <p className="section-label">Lifecycle Commands</p>
+          <p className="section-label">Lifecycle</p>
           <div className="form-grid">
-            <label className="form-field form-field-full">
-              <span>Start Command</span>
-              <textarea
-                value={state.startCommand}
-                onChange={(event) => updateField("startCommand", event.target.value)}
-                rows={2}
+            <label className="form-field">
+              <span>运行模式</span>
+              <select
+                value={state.lifecycleMode}
+                onChange={(event) => updateField("lifecycleMode", event.target.value as ProjectLifecycleMode)}
                 disabled={busy}
-              />
+              >
+                <option value="managed_openclaw">Manager 托管 OpenClaw</option>
+                <option value="custom_commands">自定义命令</option>
+              </select>
             </label>
-            <label className="form-field form-field-full">
-              <span>Stop Command</span>
-              <textarea
-                value={state.stopCommand}
-                onChange={(event) => updateField("stopCommand", event.target.value)}
-                rows={2}
-                disabled={busy}
-              />
-            </label>
-            <label className="form-field form-field-full">
-              <span>Restart Command</span>
-              <textarea
-                value={state.restartCommand}
-                onChange={(event) => updateField("restartCommand", event.target.value)}
-                rows={2}
-                disabled={busy}
-              />
-            </label>
+            {state.lifecycleMode === "managed_openclaw" ? (
+              <>
+                <label className="form-field">
+                  <span>Bind</span>
+                  <select
+                    value={state.lifecycleBind}
+                    onChange={(event) =>
+                      updateField("lifecycleBind", event.target.value as ProjectGatewayBindMode)
+                    }
+                    disabled={busy}
+                  >
+                    <option value="loopback">loopback</option>
+                    <option value="lan">lan</option>
+                  </select>
+                </label>
+                <label className="form-field">
+                  <span>启动超时 (ms)</span>
+                  <input
+                    value={state.lifecycleStartupTimeoutMs}
+                    onChange={(event) => updateField("lifecycleStartupTimeoutMs", event.target.value)}
+                    inputMode="numeric"
+                    disabled={busy}
+                  />
+                </label>
+                <label className="form-field form-field-full">
+                  <span>CLI Path（留空自动探测 `rootPath/openclaw.mjs` 或 PATH）</span>
+                  <input
+                    value={state.lifecycleCliPath}
+                    onChange={(event) => updateField("lifecycleCliPath", event.target.value)}
+                    placeholder="例如 /home/leonard/openclaw/openclaw.mjs"
+                    disabled={busy}
+                  />
+                </label>
+                <label className="form-field form-field-full">
+                  <span>Node Path（留空用 manager 当前 Node）</span>
+                  <input
+                    value={state.lifecycleNodePath}
+                    onChange={(event) => updateField("lifecycleNodePath", event.target.value)}
+                    placeholder="/usr/bin/node"
+                    disabled={busy}
+                  />
+                </label>
+                <label className="checkbox-field">
+                  <input
+                    type="checkbox"
+                    checked={state.lifecycleAllowUnconfigured}
+                    onChange={(event) =>
+                      updateField("lifecycleAllowUnconfigured", event.target.checked)
+                    }
+                    disabled={busy}
+                  />
+                  <span>启动时附加 `--allow-unconfigured`</span>
+                </label>
+                <div className="callout-box callout-box-muted">
+                  manager 会直接用 `gateway run` 在后台起一个独立 OpenClaw 进程，并自己维护 pid 和日志。
+                </div>
+              </>
+            ) : (
+              <>
+                <label className="form-field form-field-full">
+                  <span>Start Command</span>
+                  <textarea
+                    value={state.startCommand}
+                    onChange={(event) => updateField("startCommand", event.target.value)}
+                    rows={2}
+                    disabled={busy}
+                  />
+                </label>
+                <label className="form-field form-field-full">
+                  <span>Stop Command</span>
+                  <textarea
+                    value={state.stopCommand}
+                    onChange={(event) => updateField("stopCommand", event.target.value)}
+                    rows={2}
+                    disabled={busy}
+                  />
+                </label>
+                <label className="form-field form-field-full">
+                  <span>Restart Command</span>
+                  <textarea
+                    value={state.restartCommand}
+                    onChange={(event) => updateField("restartCommand", event.target.value)}
+                    rows={2}
+                    disabled={busy}
+                  />
+                </label>
+              </>
+            )}
           </div>
         </section>
 
