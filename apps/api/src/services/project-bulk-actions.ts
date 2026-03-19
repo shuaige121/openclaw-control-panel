@@ -2,6 +2,7 @@ import fs from "node:fs/promises";
 import path from "node:path";
 import crypto from "node:crypto";
 import { HttpError } from "../lib/http-error";
+import { assertConfigFieldValid } from "./project-config-validator";
 import { readProjectMemoryProfile } from "./project-memory-mode";
 import type {
   BulkActionProjectResult,
@@ -400,6 +401,7 @@ async function applyConfigAction(
   const config = await readConfig(project);
 
   if (payload.mode === "set") {
+    assertConfigFieldValid(payload.path, payload.value);
     setNestedValue(config, payload.path, payload.value);
     await writeConfig(project, config);
     return `配置 ${payload.path} 已写入。`;

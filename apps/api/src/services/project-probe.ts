@@ -1,8 +1,10 @@
+import fs from "node:fs/promises";
 import net from "node:net";
 import { readProjectHooksProfile, readProjectSkillsProfile } from "./project-hooks-skills";
 import { readProjectMemoryProfile } from "./project-memory-mode";
 import { readProjectModelProfile } from "./project-models";
 import { readProjectSandboxProfile } from "./project-sandbox";
+import { validateConfigObject, type ConfigValidationIssue } from "./project-config-validator";
 import type {
   ManagerAuthProfile,
   ProjectAuthProfile,
@@ -19,6 +21,7 @@ type ProbeResult = {
   runtimeStatus: ProjectRuntimeStatus;
   healthStatus: ProjectHealthStatus;
   lastSeenAt: string | null;
+  configIssues?: ConfigValidationIssue[];
 };
 
 type HttpProbe = {
@@ -126,15 +129,35 @@ export async function probeTcpPort(host: string, port: number, timeoutMs: number
   });
 }
 
+async function checkConfigForIssues(project: StoredProjectRecord): Promise<ConfigValidationIssue[]> {
+  try {
+    const raw = await fs.readFile(project.paths.configPath, "utf8");
+    const parsed = JSON.parse(raw) as unknown;
+    if (typeof parsed !== "object" || parsed === null || Array.isArray(parsed)) {
+      return [{ path: "<root>", message: "Config file is not a JSON object.", severity: "error" }];
+    }
+    return validateConfigObject(parsed as Record<string, unknown>);
+  } catch {
+    return [];
+  }
+}
+
 export async function probeProjectRuntime(project: StoredProjectRecord): Promise<ProbeResult> {
   const endpoints = buildProjectEndpoints(project);
   const portOpen = await probeTcpPort(project.gateway.host, project.gateway.port, 1200);
 
   if (!portOpen) {
+    // When the gateway is down, check the config for known issues that may
+    // have caused a crash-loop. This gives the dashboard actionable context
+    // instead of just "stopped / unknown".
+    const configIssues = await checkConfigForIssues(project);
+    const hasConfigErrors = configIssues.some((issue) => issue.severity === "error");
+
     return {
       runtimeStatus: "stopped",
-      healthStatus: "unknown",
+      healthStatus: hasConfigErrors ? "unhealthy" : "unknown",
       lastSeenAt: null,
+      configIssues: configIssues.length > 0 ? configIssues : undefined,
     };
   }
 
@@ -209,6 +232,7 @@ export async function buildProjectListResponse(
         skills,
         capabilities: project.capabilities,
         compatibility: project.compatibility,
+        configIssues: probe.configIssues,
       };
     }),
   );

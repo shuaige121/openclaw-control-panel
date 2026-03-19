@@ -202,6 +202,12 @@ export interface ProjectRegistryData {
   projects: StoredProjectRecord[];
 }
 
+export interface ConfigValidationIssueRef {
+  path: string;
+  message: string;
+  severity: "error" | "warning";
+}
+
 export interface ProjectListItem {
   id: string;
   name: string;
@@ -221,6 +227,7 @@ export interface ProjectListItem {
   skills: ProjectSkillsProfile;
   capabilities: ProjectCapabilities;
   compatibility: ProjectCompatibilityProfile;
+  configIssues?: ConfigValidationIssueRef[];
 }
 
 export interface ManagerAuthProfile {

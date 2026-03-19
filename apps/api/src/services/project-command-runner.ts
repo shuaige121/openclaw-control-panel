@@ -5,6 +5,7 @@ import { spawn } from "node:child_process";
 import { HttpError } from "../lib/http-error";
 import { PROJECT_RUNTIME_DIR } from "../paths";
 import { resolveManagedOpenClawLaunchSpec } from "./project-managed-openclaw";
+import { validateConfigObject, type ConfigValidationIssue } from "./project-config-validator";
 import { probeTcpPort } from "./project-probe";
 import type {
   CommandExecutionResult,
@@ -234,6 +235,19 @@ async function tailLog(logPath: string): Promise<string> {
   }
 }
 
+async function preflightConfigCheck(project: StoredProjectRecord): Promise<ConfigValidationIssue[]> {
+  try {
+    const raw = await fsp.readFile(project.paths.configPath, "utf8");
+    const parsed = JSON.parse(raw) as unknown;
+    if (typeof parsed !== "object" || parsed === null || Array.isArray(parsed)) {
+      return [{ path: "<root>", message: "Config file is not a JSON object.", severity: "error" }];
+    }
+    return validateConfigObject(parsed as Record<string, unknown>);
+  } catch {
+    return [];
+  }
+}
+
 async function executeManagedStart(
   project: StoredProjectRecord,
   runtimeDir: string,
@@ -241,6 +255,20 @@ async function executeManagedStart(
   const startedAt = Date.now();
   const runtimePaths = getProjectRuntimePaths(project, runtimeDir);
   await ensureDirectory(runtimePaths.projectRuntimeDir);
+
+  // Pre-flight: reject start if config has known-bad values that would crash the gateway.
+  const configIssues = await preflightConfigCheck(project);
+  const configErrors = configIssues.filter((issue) => issue.severity === "error");
+  if (configErrors.length > 0) {
+    const detail = configErrors.map((e) => `  - ${e.path}: ${e.message}`).join("\n");
+    return buildResult({
+      ok: false,
+      command: `managed start ${project.id}`,
+      startedAt,
+      exitCode: 1,
+      stderr: `Config pre-flight check failed. The gateway would crash on startup.\n${detail}\nFix these issues in the config before starting.`,
+    });
+  }
 
   const existingState = await readManagedState(runtimePaths.statePath);
   const portOpen = await probeTcpPort(project.gateway.host, project.gateway.port, 800);

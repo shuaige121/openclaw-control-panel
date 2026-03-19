@@ -1,4 +1,5 @@
 import fs from "node:fs/promises";
+import { assertConfigFieldValid } from "./project-config-validator";
 import type {
   ProjectSandboxBackend,
   ProjectSandboxMode,
@@ -202,17 +203,21 @@ export async function updateProjectSandboxProfile(
   const config = await readProjectConfig(project);
   const previousSandbox = buildSandboxProfileFromConfig(config);
 
+  assertConfigFieldValid("agents.defaults.sandbox.mode", input.mode);
   setNestedValue(config, "agents.defaults.sandbox.mode", input.mode);
 
   if (input.backend) {
+    assertConfigFieldValid("agents.defaults.sandbox.backend", input.backend);
     setNestedValue(config, "agents.defaults.sandbox.backend", input.backend);
   }
 
   if (input.scope) {
+    assertConfigFieldValid("agents.defaults.sandbox.scope", input.scope);
     setNestedValue(config, "agents.defaults.sandbox.scope", input.scope);
   }
 
   if (input.workspaceAccess) {
+    assertConfigFieldValid("agents.defaults.sandbox.workspaceAccess", input.workspaceAccess);
     setNestedValue(config, "agents.defaults.sandbox.workspaceAccess", input.workspaceAccess);
   }
 
