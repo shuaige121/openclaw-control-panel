@@ -140,93 +140,104 @@ export function ProjectCard({
   return (
     <article
       className={`project-card${expanded ? " project-card-expanded" : ""}`}
-      onClick={() => onToggleExpand(project.id)}
     >
-      <header className="project-card-header">
-        <label className="selection-toggle" onClick={stopCardClick}>
-          <input
-            type="checkbox"
-            checked={selected}
-            onChange={() => onToggleSelection(project.id)}
-          />
-          <span>选择</span>
-        </label>
-        <div className="project-badges">
-          <span className={`status-pill ${runtimeTone[project.runtimeStatus]}`}>
-            {project.runtimeStatus}
-          </span>
-          <span className={`status-pill ${healthTone[project.healthStatus]}`}>
-            {project.healthStatus}
-          </span>
-          <span className={`status-pill ${compatibilityTone[project.compatibility.status]}`}>
-            {compatibilityLabel[project.compatibility.status]}
-          </span>
-        </div>
-        {expanded ? (
-          <button
-            type="button"
-            className="ghost-button card-collapse-button"
-            onClick={(event) => {
-              event.stopPropagation();
-              onToggleExpand(project.id);
-            }}
-          >
-            收起
-          </button>
-        ) : null}
-      </header>
+      {/* Compact area — clickable to expand/collapse */}
+      <div className="project-card-compact" onClick={() => onToggleExpand(project.id)}>
+        <header className="project-card-header">
+          <label className="selection-toggle" onClick={stopCardClick}>
+            <input
+              type="checkbox"
+              checked={selected}
+              onChange={() => onToggleSelection(project.id)}
+            />
+            <span>选择</span>
+          </label>
+          <div className="project-badges">
+            <span className={`status-pill ${runtimeTone[project.runtimeStatus]}`}>
+              {project.runtimeStatus}
+            </span>
+            <span className={`status-pill ${healthTone[project.healthStatus]}`}>
+              {project.healthStatus}
+            </span>
+          </div>
+          {expanded ? (
+            <button
+              type="button"
+              className="ghost-button card-collapse-button"
+              onClick={(event) => {
+                event.stopPropagation();
+                onToggleExpand(project.id);
+              }}
+            >
+              收起
+            </button>
+          ) : null}
+        </header>
 
-      <div className="project-card-body">
-        <div>
-          <p className="card-kicker">Gateway {project.gatewayPort}</p>
-          <h3>{project.name}</h3>
+        <div className="project-card-body">
+          <div>
+            <p className="card-kicker">Gateway {project.gatewayPort}</p>
+            <h3>{project.name}</h3>
+          </div>
+          <p className="project-description">{project.description}</p>
         </div>
-        <p className="project-description">{project.description}</p>
       </div>
 
-      <dl className="project-meta">
-        <div>
-          <dt>Auth</dt>
-          <dd>{project.auth.label}</dd>
-        </div>
-        <div>
-          <dt>Model</dt>
-          <dd>{formatObservedModel(project)}</dd>
-        </div>
-        <div>
-          <dt>Memory</dt>
-          <dd>{project.memory.mode}</dd>
-        </div>
-        <div>
-          <dt>Smoke</dt>
-          <dd>{formatSmokeSummary(project)}</dd>
-        </div>
-        <div>
-          <dt>Sandbox</dt>
-          <dd>{project.sandbox.mode}</dd>
-        </div>
-      </dl>
-
-      <div className="project-tags">
-        {project.tags.map((tag) => (
-          <span key={tag} className="tag-pill">
-            {tag}
-          </span>
-        ))}
-      </div>
-
-      <footer className="project-actions" onClick={stopCardClick}>
-        <a href={project.endpoints.controlUiUrl} target="_blank" rel="noreferrer">
-          打开 Control UI &#8599;
-        </a>
-        <a href={project.endpoints.gatewayUrl} target="_blank" rel="noreferrer">
-          打开 Gateway &#8599;
-        </a>
-      </footer>
-
+      {/* Detail area — only when expanded, NOT clickable to collapse */}
       {expanded ? (
-        <div className="project-card-detail" onClick={stopCardClick}>
+        <div className="project-card-detail">
           <div className="project-card-detail-divider" />
+
+          <dl className="project-meta">
+            <div>
+              <dt>Auth</dt>
+              <dd>{project.auth.label}</dd>
+            </div>
+            <div>
+              <dt>Model</dt>
+              <dd>{formatObservedModel(project)}</dd>
+            </div>
+            <div>
+              <dt>Memory</dt>
+              <dd>{project.memory.mode}</dd>
+            </div>
+            <div>
+              <dt>Smoke</dt>
+              <dd>{formatSmokeSummary(project)}</dd>
+            </div>
+            <div>
+              <dt>Sandbox</dt>
+              <dd>{project.sandbox.mode}</dd>
+            </div>
+            <div>
+              <dt>Compatibility</dt>
+              <dd>
+                <span className={`status-pill ${compatibilityTone[project.compatibility.status]}`}>
+                  {compatibilityLabel[project.compatibility.status]}
+                </span>
+              </dd>
+            </div>
+          </dl>
+
+          {project.tags.length > 0 ? (
+            <div className="project-tags">
+              {project.tags.map((tag) => (
+                <span key={tag} className="tag-pill">
+                  {tag}
+                </span>
+              ))}
+            </div>
+          ) : null}
+
+          <div className="project-actions">
+            <a href={project.endpoints.controlUiUrl} target="_blank" rel="noreferrer">
+              打开 Control UI &#8599;
+            </a>
+            <a href={project.endpoints.gatewayUrl} target="_blank" rel="noreferrer">
+              打开 Gateway &#8599;
+            </a>
+          </div>
+
           <ProjectDetail
             project={project}
             managerAuth={managerAuth}
