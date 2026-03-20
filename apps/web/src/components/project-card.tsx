@@ -1,12 +1,59 @@
 import type { MouseEvent } from "react";
-import type { ProjectListItem } from "../types";
+import { ProjectDetail } from "./project-detail";
+import type {
+  BulkIntent,
+  ManagerAuthProfile,
+  ProjectActionName,
+  ProjectListItem,
+  ProjectMemoryMode,
+  ProjectSmokeTestResponse,
+  ProjectTemplateDefinition,
+  ProjectTemplateId,
+} from "../types";
 
 type ProjectCardProps = {
   project: ProjectListItem;
   selected: boolean;
-  active: boolean;
-  onSelect: (projectId: string) => void;
+  expanded: boolean;
+  managerAuth: ManagerAuthProfile | null;
+  bulkIntent: BulkIntent | null;
+  selectedCount: number;
+  deleting: boolean;
+  activeAction: ProjectActionName | null;
+  scanningCompatibility: boolean;
+  smokeTesting: boolean;
+  modelUpdating: boolean;
+  memoryUpdating: boolean;
+  templateApplying: boolean;
+  catalogActionKey: string | null;
+  smokeTestResult: ProjectSmokeTestResponse | null;
+  templates: ProjectTemplateDefinition[];
+  onToggleExpand: (projectId: string) => void;
   onToggleSelection: (projectId: string) => void;
+  onEdit: (projectId: string) => void;
+  onDelete: (projectId: string) => void;
+  onRunAction: (projectId: string, action: ProjectActionName) => void;
+  onScanCompatibility: (projectId: string) => void;
+  onRunSmokeTest: (projectId: string) => void;
+  onUpdateModel: (projectId: string, payload: { modelRef: string; restartIfRunning: boolean }) => void;
+  onUpdateMemoryMode: (
+    projectId: string,
+    payload: { mode: ProjectMemoryMode; restartIfRunning: boolean },
+  ) => void;
+  onApplyTemplate: (
+    projectId: string,
+    payload: { templateId: ProjectTemplateId; restartIfRunning: boolean },
+  ) => void;
+  onManageHook: (
+    projectId: string,
+    hookName: string,
+    mode: "enable" | "disable" | "remove",
+  ) => void;
+  onManageSkill: (
+    projectId: string,
+    skillName: string,
+    mode: "enable" | "disable" | "remove",
+  ) => void;
 };
 
 const runtimeTone: Record<ProjectListItem["runtimeStatus"], string> = {
@@ -63,14 +110,37 @@ function formatSmokeSummary(project: ProjectListItem): string {
 export function ProjectCard({
   project,
   selected,
-  active,
-  onSelect,
+  expanded,
+  managerAuth,
+  bulkIntent,
+  selectedCount,
+  deleting,
+  activeAction,
+  scanningCompatibility,
+  smokeTesting,
+  modelUpdating,
+  memoryUpdating,
+  templateApplying,
+  catalogActionKey,
+  smokeTestResult,
+  templates,
+  onToggleExpand,
   onToggleSelection,
+  onEdit,
+  onDelete,
+  onRunAction,
+  onScanCompatibility,
+  onRunSmokeTest,
+  onUpdateModel,
+  onUpdateMemoryMode,
+  onApplyTemplate,
+  onManageHook,
+  onManageSkill,
 }: ProjectCardProps) {
   return (
     <article
-      className={`project-card${active ? " project-card-active" : ""}`}
-      onClick={() => onSelect(project.id)}
+      className={`project-card${expanded ? " project-card-expanded" : ""}`}
+      onClick={() => onToggleExpand(project.id)}
     >
       <header className="project-card-header">
         <label className="selection-toggle" onClick={stopCardClick}>
@@ -92,6 +162,18 @@ export function ProjectCard({
             {compatibilityLabel[project.compatibility.status]}
           </span>
         </div>
+        {expanded ? (
+          <button
+            type="button"
+            className="ghost-button card-collapse-button"
+            onClick={(event) => {
+              event.stopPropagation();
+              onToggleExpand(project.id);
+            }}
+          >
+            收起
+          </button>
+        ) : null}
       </header>
 
       <div className="project-card-body">
@@ -141,6 +223,39 @@ export function ProjectCard({
           打开 Gateway &#8599;
         </a>
       </footer>
+
+      {expanded ? (
+        <div className="project-card-detail" onClick={stopCardClick}>
+          <div className="project-card-detail-divider" />
+          <ProjectDetail
+            project={project}
+            managerAuth={managerAuth}
+            bulkIntent={bulkIntent}
+            selectedCount={selectedCount}
+            deleting={deleting}
+            activeAction={activeAction}
+            scanningCompatibility={scanningCompatibility}
+            smokeTesting={smokeTesting}
+            modelUpdating={modelUpdating}
+            memoryUpdating={memoryUpdating}
+            templateApplying={templateApplying}
+            catalogActionKey={catalogActionKey}
+            smokeTestResult={smokeTestResult}
+            templates={templates}
+            onEdit={onEdit}
+            onDelete={onDelete}
+            onRunAction={onRunAction}
+            onScanCompatibility={onScanCompatibility}
+            onRunSmokeTest={onRunSmokeTest}
+            onUpdateModel={onUpdateModel}
+            onUpdateMemoryMode={onUpdateMemoryMode}
+            onApplyTemplate={onApplyTemplate}
+            onManageHook={onManageHook}
+            onManageSkill={onManageSkill}
+            inline
+          />
+        </div>
+      ) : null}
     </article>
   );
 }

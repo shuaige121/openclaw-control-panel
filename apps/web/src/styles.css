@@ -327,29 +327,11 @@ a {
   background: rgba(11, 17, 32, 0.58);
 }
 
-.workspace-grid {
+.projects-grid {
   display: grid;
-  grid-template-columns: minmax(0, 1.35fr) minmax(320px, 420px);
-  gap: 18px;
-  margin-top: 18px;
-}
-
-.detail-stack {
-  display: grid;
-  gap: 18px;
-  align-content: start;
-}
-
-.project-column {
-  display: grid;
-  gap: 14px;
-  align-content: start;
-}
-
-.project-grid {
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+  grid-template-columns: repeat(auto-fill, minmax(350px, 1fr));
   gap: 16px;
+  margin-top: 18px;
 }
 
 .project-card {
@@ -368,11 +350,40 @@ a {
   transform: translateY(-1px);
 }
 
-.project-card-active {
+.project-card-expanded {
+  grid-column: 1 / -1;
   border-color: var(--border-strong);
   border-left: 3px solid #5b9aff;
-  background: rgba(82, 124, 255, 0.08);
-  transform: translateY(-1px);
+  background:
+    linear-gradient(180deg, rgba(22, 31, 61, 0.92), rgba(14, 21, 40, 0.96)),
+    var(--surface-strong);
+  transform: none;
+}
+
+.project-card-expanded:hover {
+  transform: none;
+}
+
+.project-card-detail {
+  display: grid;
+  gap: 18px;
+}
+
+.project-card-detail-divider {
+  height: 1px;
+  background: var(--border-strong);
+  margin: 4px 0;
+}
+
+.detail-inline {
+  display: grid;
+  gap: 18px;
+}
+
+.card-collapse-button {
+  margin-left: auto;
+  padding: 6px 14px !important;
+  font-size: 0.85rem;
 }
 
 .project-card-header,
@@ -713,7 +724,13 @@ a {
     grid-template-columns: repeat(2, minmax(0, 1fr));
   }
 
-  .workspace-grid {
+  .projects-grid {
+    grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
+  }
+}
+
+@media (max-width: 480px) {
+  .projects-grid {
     grid-template-columns: 1fr;
   }
 }
@@ -917,10 +934,14 @@ body.theme-40k .project-card:hover {
   box-shadow: 0 0 15px rgba(201, 168, 76, 0.1);
 }
 
-/* 40K active card */
-body.theme-40k .project-card-active {
+/* 40K expanded card */
+body.theme-40k .project-card-expanded {
   border-left: 3px solid #c9a84c;
-  background: rgba(201, 168, 76, 0.08);
+  background: rgba(26, 21, 16, 0.95);
+}
+
+body.theme-40k .project-card-detail-divider {
+  background: rgba(201, 176, 107, 0.28);
 }
 
 /* 40K hero bar — darker, more imposing */

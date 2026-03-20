@@ -50,6 +50,8 @@ type ProjectDetailProps = {
     skillName: string,
     mode: "enable" | "disable" | "remove",
   ) => void;
+  /** When true, renders without the outer <aside> wrapper (for inline use in expanded card). */
+  inline?: boolean;
 };
 
 const bulkDescriptions: Record<BulkIntent, string> = {
@@ -177,6 +179,7 @@ export function ProjectDetail({
   onApplyTemplate,
   onManageHook,
   onManageSkill,
+  inline,
 }: ProjectDetailProps) {
   const [modelRef, setModelRef] = useState("");
   const [restartIfRunning, setRestartIfRunning] = useState(true);
@@ -216,12 +219,15 @@ export function ProjectDetail({
   }, [project?.id]);
 
   if (!project) {
+    if (inline) {
+      return null;
+    }
     return (
       <aside className="detail-panel">
         <p className="panel-kicker">项目详情</p>
         <h2>选择一个项目</h2>
         <p className="muted-copy">
-          左侧点一个项目就能看它的 gateway、auth、路径和 Control UI 入口。
+          点击任意一个项目卡片查看详情。
         </p>
       </aside>
     );
@@ -242,23 +248,27 @@ export function ProjectDetail({
   const activeSmokeResult =
     smokeTestResult?.projectId === project.id ? smokeTestResult : project.lastSmokeTest;
 
-  return (
-    <aside className="detail-panel">
-      <header className="detail-header">
-        <div>
-          <p className="panel-kicker">项目详情</p>
-          <h2>{project.name}</h2>
-        </div>
-        <div className="project-badges">
-          <span className="tag-pill">Port {project.gatewayPort}</span>
-          <span className="tag-pill">{project.auth.strategy}</span>
-          <span className={`status-pill ${compatibilityTone[project.compatibility.status]}`}>
-            {compatibilityLabel[project.compatibility.status]}
-          </span>
-        </div>
-      </header>
+  const detailContent = (
+    <>
+      {!inline ? (
+        <>
+          <header className="detail-header">
+            <div>
+              <p className="panel-kicker">项目详情</p>
+              <h2>{project.name}</h2>
+            </div>
+            <div className="project-badges">
+              <span className="tag-pill">Port {project.gatewayPort}</span>
+              <span className="tag-pill">{project.auth.strategy}</span>
+              <span className={`status-pill ${compatibilityTone[project.compatibility.status]}`}>
+                {compatibilityLabel[project.compatibility.status]}
+              </span>
+            </div>
+          </header>
 
-      <p className="muted-copy">{project.description}</p>
+          <p className="muted-copy">{project.description}</p>
+        </>
+      ) : null}
 
       <div className="detail-actions">
         <a href={project.endpoints.controlUiUrl} target="_blank" rel="noreferrer">
@@ -877,6 +887,12 @@ export function ProjectDetail({
           {bulkIntent ? bulkDescriptions[bulkIntent] : "先在上方批量栏里选一个操作类型。"}
         </div>
       </section>
-    </aside>
+    </>
   );
+
+  if (inline) {
+    return <div className="detail-inline">{detailContent}</div>;
+  }
+
+  return <aside className="detail-panel">{detailContent}</aside>;
 }

@@ -4,7 +4,6 @@ import { BulkActionPanel } from "./components/bulk-action-panel";
 import { BulkToolbar } from "./components/bulk-toolbar";
 import { ProjectEditor } from "./components/project-editor";
 import { ProjectCard } from "./components/project-card";
-import { ProjectDetail } from "./components/project-detail";
 import { useTheme } from "./theme";
 import type {
   ActionHistoryResponse,
@@ -172,14 +171,13 @@ export default function App() {
   }, [items, search]);
 
   useEffect(() => {
-    if (filteredProjects.length === 0) {
-      setActiveId(null);
+    if (activeId === null) {
       return;
     }
 
     const activeStillExists = filteredProjects.some((project) => project.id === activeId);
     if (!activeStillExists) {
-      setActiveId(filteredProjects[0]?.id ?? null);
+      setActiveId(null);
     }
   }, [activeId, filteredProjects]);
 
@@ -199,17 +197,21 @@ export default function App() {
     () => items.filter((project) => selectedIds.includes(project.id)),
     [items, selectedIds],
   );
-  const activeProject = filteredProjects.find((project) => project.id === activeId) ?? null;
+  const expandedProject = filteredProjects.find((project) => project.id === activeId) ?? null;
   const visibleHistoryItems = useMemo(() => {
     const items = historyData?.items ?? [];
-    if (!activeProject) {
+    if (!expandedProject) {
       return items.slice(0, 8);
     }
 
     return items
-      .filter((entry) => entry.projects.some((project) => project.id === activeProject.id))
+      .filter((entry) => entry.projects.some((project) => project.id === expandedProject.id))
       .slice(0, 6);
-  }, [activeProject, historyData]);
+  }, [expandedProject, historyData]);
+
+  function toggleExpandProject(projectId: string) {
+    setActiveId((current) => (current === projectId ? null : projectId));
+  }
 
   function toggleProjectSelection(projectId: string) {
     setSelectedIds((current) =>
@@ -717,10 +719,10 @@ export default function App() {
 
   const { theme, toggle: toggleTheme } = useTheme();
 
-  let sidePanel;
+  let overlayPanel: React.ReactNode = null;
 
   if (panelMode === "create") {
-    sidePanel = (
+    overlayPanel = (
       <ProjectEditor
         mode="create"
         managerAuth={data?.managerAuth ?? null}
@@ -734,7 +736,7 @@ export default function App() {
     );
   } else if (panelMode === "edit") {
     if (editorStatus === "loading") {
-      sidePanel = (
+      overlayPanel = (
         <aside className="detail-panel">
           <p className="panel-kicker">编辑项目</p>
           <h2>正在读取注册表详情</h2>
@@ -742,7 +744,7 @@ export default function App() {
         </aside>
       );
     } else if (editorStatus === "error") {
-      sidePanel = (
+      overlayPanel = (
         <aside className="detail-panel">
           <p className="panel-kicker">编辑项目</p>
           <h2>读取失败</h2>
@@ -757,7 +759,7 @@ export default function App() {
         </aside>
       );
     } else {
-      sidePanel = (
+      overlayPanel = (
         <ProjectEditor
           mode="edit"
           managerAuth={data?.managerAuth ?? null}
@@ -771,7 +773,7 @@ export default function App() {
       );
     }
   } else if (bulkIntent && selectedProjects.length > 0) {
-    sidePanel = (
+    overlayPanel = (
       <BulkActionPanel
         intent={bulkIntent}
         selectedProjects={selectedProjects}
@@ -781,65 +783,6 @@ export default function App() {
         onCancel={closeBulkPanel}
         onSubmit={submitBulkAction}
       />
-    );
-  } else {
-    sidePanel = (
-      <div className="detail-stack">
-        <ProjectDetail
-          project={activeProject}
-          managerAuth={data?.managerAuth ?? null}
-          bulkIntent={bulkIntent}
-          selectedCount={selectedProjects.length}
-          deleting={mutationState === "deleting"}
-          activeAction={activeProjectAction}
-          scanningCompatibility={compatibilityScanProjectId === activeProject?.id}
-          smokeTesting={smokeTestProjectId === activeProject?.id}
-          modelUpdating={modelUpdateProjectId === activeProject?.id}
-          memoryUpdating={memoryUpdateProjectId === activeProject?.id}
-          templateApplying={templateApplyProjectId === activeProject?.id}
-          catalogActionKey={catalogActionKey}
-          smokeTestResult={smokeTestResult}
-          templates={templates}
-          onEdit={openEditPanel}
-          onDelete={deleteProject}
-          onRunAction={runProjectAction}
-          onScanCompatibility={scanProjectCompatibility}
-          onRunSmokeTest={runProjectSmokeTest}
-          onUpdateModel={updateProjectModel}
-          onUpdateMemoryMode={updateProjectMemoryMode}
-          onApplyTemplate={applyTemplateToProject}
-          onManageHook={(projectId, name, mode) =>
-            manageProjectCatalogEntry({
-              kind: "hook",
-              projectId,
-              name,
-              mode,
-            })
-          }
-          onManageSkill={(projectId, name, mode) =>
-            manageProjectCatalogEntry({
-              kind: "skill",
-              projectId,
-              name,
-              mode,
-            })
-          }
-        />
-        <ActionHistoryPanel
-          title={activeProject ? `${activeProject.name} 最近动作` : "全局最近动作"}
-          subtitle={
-            activeProject
-              ? "这里会保留这个项目最近的生命周期、批量变更和注册表修改记录。"
-              : "这里会保留整个 Control Panel 最近的操作记录。"
-          }
-          items={visibleHistoryItems}
-          emptyMessage={
-            activeProject
-              ? "这个项目还没有动作历史。"
-              : "还没有任何动作历史，执行一次操作后这里就会出现。"
-          }
-        />
-      </div>
     );
   }
 
@@ -917,7 +860,7 @@ export default function App() {
         <div className="workspace-toolbar">
           <div>
             <p className="panel-kicker">项目视图</p>
-            <h2>项目卡片 + 右侧详情</h2>
+            <h2>项目卡片</h2>
           </div>
         </div>
 
@@ -936,39 +879,92 @@ export default function App() {
         ) : null}
 
         {status === "ready" ? (
-          <div className="workspace-grid">
-            <div className="project-column">
-              <label className="search-input">
-                <span>搜索</span>
-                <input
-                  value={search}
-                  onChange={(event) => setSearch(event.target.value)}
-                  placeholder="按项目名、路径、tag、auth 搜索"
-                />
-              </label>
-              {filteredProjects.length === 0 ? (
-                <div className="state-card state-card-empty">
-                  <h3>没有匹配的项目</h3>
-                  <p>试试清空搜索条件，或者先新增一个要纳管的 OpenClaw 项目。</p>
-                </div>
-              ) : (
-                <div className="project-grid">
-                  {filteredProjects.map((project) => (
-                    <ProjectCard
-                      key={project.id}
-                      project={project}
-                      selected={selectedIds.includes(project.id)}
-                      active={project.id === activeId}
-                      onSelect={setActiveId}
-                      onToggleSelection={toggleProjectSelection}
-                    />
-                  ))}
-                </div>
-              )}
-            </div>
+          <>
+            <label className="search-input" style={{ marginTop: 18 }}>
+              <span>搜索</span>
+              <input
+                value={search}
+                onChange={(event) => setSearch(event.target.value)}
+                placeholder="按项目名、路径、tag、auth 搜索"
+              />
+            </label>
 
-            {sidePanel}
-          </div>
+            {overlayPanel ? (
+              <div style={{ marginTop: 18 }}>{overlayPanel}</div>
+            ) : null}
+
+            {filteredProjects.length === 0 ? (
+              <div className="state-card state-card-empty" style={{ marginTop: 18 }}>
+                <h3>没有匹配的项目</h3>
+                <p>试试清空搜索条件，或者先新增一个要纳管的 OpenClaw 项目。</p>
+              </div>
+            ) : (
+              <div className="projects-grid">
+                {filteredProjects.map((project) => (
+                  <ProjectCard
+                    key={project.id}
+                    project={project}
+                    selected={selectedIds.includes(project.id)}
+                    expanded={project.id === activeId}
+                    managerAuth={data?.managerAuth ?? null}
+                    bulkIntent={bulkIntent}
+                    selectedCount={selectedProjects.length}
+                    deleting={mutationState === "deleting" && project.id === activeId}
+                    activeAction={project.id === activeId ? activeProjectAction : null}
+                    scanningCompatibility={compatibilityScanProjectId === project.id}
+                    smokeTesting={smokeTestProjectId === project.id}
+                    modelUpdating={modelUpdateProjectId === project.id}
+                    memoryUpdating={memoryUpdateProjectId === project.id}
+                    templateApplying={templateApplyProjectId === project.id}
+                    catalogActionKey={catalogActionKey}
+                    smokeTestResult={smokeTestResult}
+                    templates={templates}
+                    onToggleExpand={toggleExpandProject}
+                    onToggleSelection={toggleProjectSelection}
+                    onEdit={openEditPanel}
+                    onDelete={deleteProject}
+                    onRunAction={runProjectAction}
+                    onScanCompatibility={scanProjectCompatibility}
+                    onRunSmokeTest={runProjectSmokeTest}
+                    onUpdateModel={updateProjectModel}
+                    onUpdateMemoryMode={updateProjectMemoryMode}
+                    onApplyTemplate={applyTemplateToProject}
+                    onManageHook={(projectId, name, mode) =>
+                      manageProjectCatalogEntry({
+                        kind: "hook",
+                        projectId,
+                        name,
+                        mode,
+                      })
+                    }
+                    onManageSkill={(projectId, name, mode) =>
+                      manageProjectCatalogEntry({
+                        kind: "skill",
+                        projectId,
+                        name,
+                        mode,
+                      })
+                    }
+                  />
+                ))}
+              </div>
+            )}
+
+            <ActionHistoryPanel
+              title={expandedProject ? `${expandedProject.name} 最近动作` : "全局最近动作"}
+              subtitle={
+                expandedProject
+                  ? "这里会保留这个项目最近的生命周期、批量变更和注册表修改记录。"
+                  : "这里会保留整个 Control Panel 最近的操作记录。"
+              }
+              items={visibleHistoryItems}
+              emptyMessage={
+                expandedProject
+                  ? "这个项目还没有动作历史。"
+                  : "还没有任何动作历史，执行一次操作后这里就会出现。"
+              }
+            />
+          </>
         ) : null}
       </section>
     </main>
