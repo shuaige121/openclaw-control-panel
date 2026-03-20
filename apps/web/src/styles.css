@@ -871,10 +871,10 @@ body.theme-40k {
   --bg-base: #0a0a0f;
   --bg-card: #12111a;
   --bg-input: #1a1825;
-  --ink: #c9b06b;
-  --ink-soft: #8a7d5a;
-  --ink-muted: #5a5040;
-  --accent: #b8860b;
+  --ink: #e8d5a3;
+  --ink-soft: #b8a67a;
+  --ink-muted: #8a7d5a;
+  --accent: #c9a84c;
   --accent-warm: #8b6914;
   --border: rgba(201, 176, 107, 0.16);
   --border-strong: rgba(201, 176, 107, 0.32);
@@ -903,27 +903,31 @@ body.theme-40k {
   background-color: #0a0a0f;
 }
 
-/* 40K card styling */
+/* 40K card styling — industrial metal feel */
 body.theme-40k .project-card {
-  border: 1px solid rgba(58, 48, 32, 0.8);
-  background: rgba(18, 17, 26, 0.9);
-  box-shadow: inset 0 0 20px rgba(201, 176, 107, 0.05);
+  border: 1px solid #3a3020;
+  background: rgba(15, 12, 8, 0.95);
+  box-shadow:
+    inset 0 1px 0 rgba(201, 168, 76, 0.1),
+    inset 0 -1px 0 rgba(0, 0, 0, 0.5);
 }
 
 body.theme-40k .project-card:hover {
-  border-color: var(--wh40k-gold);
-  box-shadow: 0 0 10px rgba(201, 176, 107, 0.1);
+  border-color: #c9a84c;
+  box-shadow: 0 0 15px rgba(201, 168, 76, 0.1);
 }
 
 /* 40K active card */
 body.theme-40k .project-card-active {
-  border-left: 3px solid var(--wh40k-gold);
-  background: rgba(201, 176, 107, 0.05);
+  border-left: 3px solid #c9a84c;
+  background: rgba(201, 168, 76, 0.08);
 }
 
-/* 40K hero bar */
+/* 40K hero bar — darker, more imposing */
 body.theme-40k .hero {
-  background: linear-gradient(180deg, #1a1510 0%, rgba(18, 17, 26, 0.92) 100%);
+  background: linear-gradient(180deg, #1a1408 0%, #0a0806 100%);
+  border-bottom: 2px solid #3a3020;
+  box-shadow: 0 2px 20px rgba(0, 0, 0, 0.5);
   border-color: rgba(58, 48, 32, 0.6);
 }
 
@@ -1006,25 +1010,28 @@ body.theme-40k .inline-notice-error {
   border-color: rgba(139, 0, 0, 0.4);
 }
 
-/* 40K status badges */
+/* 40K status badges — bright glowing colors */
 body.theme-40k .tone-ok {
-  color: #7fff7f;
-  background: rgba(111, 227, 161, 0.1);
+  color: #00ff66;
+  text-shadow: 0 0 6px rgba(0, 255, 102, 0.4);
+  background: rgba(0, 255, 102, 0.1);
 }
 
 body.theme-40k .tone-warn {
-  color: #ffd700;
-  background: rgba(255, 215, 0, 0.1);
+  color: #ffaa00;
+  text-shadow: 0 0 6px rgba(255, 170, 0, 0.4);
+  background: rgba(255, 170, 0, 0.1);
 }
 
 body.theme-40k .tone-bad {
-  color: #ff4444;
-  background: rgba(255, 68, 68, 0.1);
+  color: #ff3333;
+  text-shadow: 0 0 6px rgba(255, 51, 51, 0.4);
+  background: rgba(255, 51, 51, 0.1);
 }
 
 body.theme-40k .tone-muted {
-  color: #8a7d5a;
-  background: rgba(138, 125, 90, 0.1);
+  color: #888;
+  background: rgba(136, 136, 136, 0.1);
 }
 
 /* 40K tag pills */
@@ -1140,4 +1147,86 @@ body.theme-40k .link-button {
 body.theme-40k .selection-toggle input,
 body.theme-40k .checkbox-field input {
   accent-color: var(--wh40k-gold);
+}
+
+/* 40K sharp corners — grimdark is NOT friendly */
+body.theme-40k .project-card,
+body.theme-40k .state-card,
+body.theme-40k .detail-panel,
+body.theme-40k .search-input input,
+body.theme-40k .primary-button,
+body.theme-40k .ghost-button,
+body.theme-40k .status-pill,
+body.theme-40k .tag-pill,
+body.theme-40k .hero,
+body.theme-40k .summary-card,
+body.theme-40k .workspace-panel,
+body.theme-40k .bulk-toolbar,
+body.theme-40k .inline-notice,
+body.theme-40k .callout-box,
+body.theme-40k .catalog-item,
+body.theme-40k .history-item,
+body.theme-40k .history-output,
+body.theme-40k .result-item,
+body.theme-40k .form-field input,
+body.theme-40k .form-field select,
+body.theme-40k .form-field textarea,
+body.theme-40k .theme-toggle,
+body.theme-40k .project-actions a,
+body.theme-40k .detail-actions a {
+  border-radius: 2px;
+}
+
+/* 40K CRT scanline overlay */
+body.theme-40k::after {
+  content: '';
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  pointer-events: none;
+  z-index: 9999;
+  background: repeating-linear-gradient(
+    0deg,
+    transparent,
+    transparent 2px,
+    rgba(0, 0, 0, 0.03) 2px,
+    rgba(0, 0, 0, 0.03) 4px
+  );
+}
+
+/* 40K delete/danger button — hazard styling */
+body.theme-40k .btn-danger,
+body.theme-40k .ghost-button-danger,
+body.theme-40k [class*="delete"],
+body.theme-40k button[style*="red"] {
+  background: linear-gradient(135deg, #4a0000, #8b0000);
+  border: 1px solid #ff3333;
+  color: #ff6666;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+}
+
+/* 40K stat block numbers — phosphor glow */
+body.theme-40k .state-card h3 {
+  color: #c9a84c;
+  text-shadow: 0 0 10px rgba(201, 168, 76, 0.3);
+}
+
+/* 40K summary card numbers — phosphor glow */
+body.theme-40k .summary-card strong {
+  color: #c9a84c;
+  text-shadow: 0 0 10px rgba(201, 168, 76, 0.3);
+}
+
+/* 40K links/action buttons — gold instead of blue */
+body.theme-40k a,
+body.theme-40k .action-link {
+  color: #c9a84c;
+}
+
+body.theme-40k a:hover {
+  color: #e8d5a3;
+  text-shadow: 0 0 8px rgba(201, 168, 76, 0.3);
 }
