@@ -38,7 +38,7 @@
   <rect x="250" y="30" width="400" height="110" rx="10" fill="none" stroke="#58a6ff" stroke-width="0.5" opacity="0.3"/>
 
   <!-- Manager icon + title -->
-  <text x="310" y="70" font-family="'Segoe UI', system-ui, sans-serif" font-size="14" font-weight="700" fill="#58a6ff">OpenClaw Manager</text>
+  <text x="310" y="70" font-family="'Segoe UI', system-ui, sans-serif" font-size="14" font-weight="700" fill="#58a6ff">OpenClaw Control Panel</text>
   <text x="310" y="92" font-family="'Segoe UI', system-ui, sans-serif" font-size="11" fill="#6e7681">the observer, not the actor</text>
 
   <!-- Manager inner labels -->
@@ -115,5 +115,5 @@
   <text x="690" y="349" font-family="'Segoe UI', system-ui, sans-serif" font-size="10" fill="#6e7681">disposable</text>
 
   <!-- Bottom note -->
-  <text x="450" y="403" text-anchor="middle" font-family="Georgia, serif" font-style="italic" font-size="11" fill="#484f58">each worldline is sovereign — the manager observes, it does not govern</text>
+  <text x="450" y="403" text-anchor="middle" font-family="Georgia, serif" font-style="italic" font-size="11" fill="#484f58">each worldline is sovereign — the control panel observes, it does not govern</text>
 </svg>

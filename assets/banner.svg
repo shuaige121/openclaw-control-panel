@@ -78,7 +78,7 @@
 
   <!-- Title -->
   <text x="600" y="155" text-anchor="middle" font-family="'Segoe UI', system-ui, -apple-system, sans-serif" font-weight="700" font-size="46" fill="url(#accent)" letter-spacing="-1">
-    OpenClaw Manager
+    OpenClaw Control Panel
   </text>
 
   <!-- Divider line -->
@@ -91,7 +91,7 @@
 
   <!-- Subtitle -->
   <text x="600" y="235" text-anchor="middle" font-family="Georgia, 'Times New Roman', serif" font-style="italic" font-size="16" fill="#6e7681">
-    One mind, one job. Many minds, one manager.
+    One mind, one job. Many minds, one control panel.
   </text>
 
   <!-- Bottom pills -->

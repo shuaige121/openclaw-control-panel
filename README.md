@@ -102,8 +102,8 @@ Jump into each project's native OpenClaw Control UI for single-instance work.
 ## Quick Start
 
 ```bash
-git clone https://github.com/shuaige121/openclaw-manager.git
-cd openclaw-manager
+git clone https://github.com/shuaige121/openclaw-control-panel.git
+cd openclaw-control-panel
 npm install
 npm run dev
 ```
