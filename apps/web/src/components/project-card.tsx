@@ -150,7 +150,7 @@ export function ProjectCard({
               checked={selected}
               onChange={() => onToggleSelection(project.id)}
             />
-            <span>选择</span>
+            <span></span>
           </label>
           <div className="project-badges">
             <span className={`status-pill ${runtimeTone[project.runtimeStatus]}`}>
@@ -169,14 +169,14 @@ export function ProjectCard({
                 onToggleExpand(project.id);
               }}
             >
-              收起
+              收起 &#9650;
             </button>
           ) : null}
         </header>
 
         <div className="project-card-body">
           <div>
-            <p className="card-kicker">Gateway {project.gatewayPort}</p>
+            <p className="card-kicker">端口 {project.gatewayPort}</p>
             <h3>{project.name}</h3>
           </div>
           <p className="project-description">{project.description}</p>
@@ -231,10 +231,10 @@ export function ProjectCard({
 
           <div className="project-actions">
             <a href={project.endpoints.controlUiUrl} target="_blank" rel="noreferrer">
-              打开 Control UI &#8599;
+              打开控制台 &#8599;
             </a>
             <a href={project.endpoints.gatewayUrl} target="_blank" rel="noreferrer">
-              打开 Gateway &#8599;
+              打开服务 &#8599;
             </a>
           </div>
 

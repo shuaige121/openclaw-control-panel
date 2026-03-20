@@ -192,7 +192,7 @@ export function BulkActionPanel({
       </header>
 
       <div className="callout-box">
-        <strong>目标项目：</strong> {selectedProjects.map((project) => project.name).join("、")}
+        <strong>目标机器人：</strong> {selectedProjects.map((project) => project.name).join("、")}
       </div>
 
       <form className="project-form" onSubmit={handleSubmit}>
@@ -255,7 +255,7 @@ export function BulkActionPanel({
                     value={state.content}
                     onChange={(event) => updateField("content", event.target.value)}
                     rows={5}
-                    placeholder="这段文本会被写入每个项目的 MEMORY.md"
+                    placeholder="这段文本会被写入每个机器人的记忆"
                     disabled={busy}
                   />
                 </label>

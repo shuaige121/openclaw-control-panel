@@ -26,21 +26,21 @@ export function BulkToolbar({
   const intentAvailability: Record<BulkIntent, { enabled: boolean; reason: string }> = {
     hooks: {
       enabled: selectedProjects.every((project) => project.capabilities.bulkHooks),
-      reason: "有项目禁用了批量 Hook。",
+      reason: "有机器人禁用了批量 Hook。",
     },
     skills: {
       enabled: selectedProjects.every((project) => project.capabilities.bulkSkills),
-      reason: "有项目禁用了批量 Skill。",
+      reason: "有机器人禁用了批量 Skill。",
     },
     memory: {
       enabled: selectedProjects.every(
         (project) => project.capabilities.bulkMemory && project.memory.mode === "normal",
       ),
-      reason: "有项目不是 normal 记忆模式，或禁用了批量记忆。",
+      reason: "有机器人不是正常记忆模式，或禁用了批量记忆。",
     },
     config: {
       enabled: selectedProjects.every((project) => project.capabilities.bulkConfigPatch),
-      reason: "有项目禁用了批量配置 Patch。",
+      reason: "有机器人禁用了批量配置修改。",
     },
   };
 
@@ -48,9 +48,9 @@ export function BulkToolbar({
     <section className="bulk-toolbar">
       <div>
         <p className="panel-kicker">批量操作</p>
-        <h2>已选 {selectedProjects.length} 个项目</h2>
+        <h2>已选 {selectedProjects.length} 个机器人</h2>
         <p className="muted-copy">
-          单项目深控交给各自 Control UI，跨项目变更由 Control Panel 统一执行。
+          对选中的机器人统一执行批量操作。
         </p>
       </div>
 

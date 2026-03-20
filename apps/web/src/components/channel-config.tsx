@@ -754,7 +754,7 @@ export function ChannelConfig({ projectId }: ChannelConfigProps) {
               <span className="channel-config-switch-copy">
                 <span className="channel-config-switch-label">Enabled</span>
                 <span className="channel-config-switch-hint">
-                  Turn on WeCom delivery for this project.
+                  为这个机器人启用企业微信消息。
                 </span>
               </span>
             </label>
@@ -924,7 +924,7 @@ export function ChannelConfig({ projectId }: ChannelConfigProps) {
               <span className="channel-config-switch-copy">
                 <span className="channel-config-switch-label">Enabled</span>
                 <span className="channel-config-switch-hint">
-                  Turn on Feishu or Lark delivery for this project.
+                  为这个机器人启用飞书消息。
                 </span>
               </span>
             </label>
@@ -1070,13 +1070,13 @@ export function ChannelConfig({ projectId }: ChannelConfigProps) {
 
       <header className="detail-header">
         <div>
-          <p className="panel-kicker">Channel Config</p>
-          <h2>WeCom and Feishu</h2>
+          <p className="panel-kicker">消息通道</p>
+          <h2>企业微信和飞书</h2>
         </div>
       </header>
 
       <p className="muted-copy">
-        Manage enterprise bot credentials for project <code>{projectId}</code>.
+        管理机器人 <code>{projectId}</code> 的消息通道凭证。
       </p>
 
       <div className="channel-config-tabs" role="tablist" aria-label="Channel configuration tabs">

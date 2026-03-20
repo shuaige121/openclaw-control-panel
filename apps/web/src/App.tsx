@@ -327,8 +327,8 @@ export default function App() {
           tone: "success",
           text:
             params.applyTemplateAfterCreate && params.templateId
-              ? `项目 ${response.projectId} 已创建，并套用了 ${params.templateId} 模板。`
-              : `项目 ${response.projectId} 已写入注册表。`,
+              ? `机器人 ${response.projectId} 已创建，并套用了 ${params.templateId} 模板。`
+              : `机器人 ${response.projectId} 已创建。`,
         });
         closeEditorPanel();
         reloadProjects(response.projectId);
@@ -346,7 +346,7 @@ export default function App() {
       });
       setNotice({
         tone: "success",
-        text: `项目 ${response.projectId} 已更新。`,
+        text: `机器人 ${response.projectId} 已更新。`,
       });
       closeEditorPanel();
       reloadProjects(response.projectId);
@@ -382,9 +382,9 @@ export default function App() {
 
       const restartDetail = response.restartTriggered
         ? response.result?.ok
-          ? "运行中的项目已经重启。"
+          ? "运行中的机器人已经重启。"
           : `重启失败：${response.result?.stderr || response.result?.stdout || "请查看动作历史。"}`
-        : "项目当前未运行，没有触发重启。";
+        : "当前未运行，没有触发重启。";
 
       setNotice({
         tone: response.ok ? "success" : "error",
@@ -402,7 +402,7 @@ export default function App() {
   }
 
   async function deleteProject(projectId: string) {
-    if (!window.confirm(`确认删除项目 ${projectId} 吗？这会从 Control Panel 注册表中移除它。`)) {
+    if (!window.confirm(`确认删除机器人 ${projectId} 吗？`)) {
       return;
     }
 
@@ -422,7 +422,7 @@ export default function App() {
       }
       setNotice({
         tone: "success",
-        text: `项目 ${projectId} 已从注册表删除。`,
+        text: `机器人 ${projectId} 已删除。`,
       });
       reloadProjects();
     } catch (error) {
@@ -481,7 +481,7 @@ export default function App() {
       setBulkResult(response);
       setNotice({
         tone: response.ok ? "success" : "error",
-        text: `${response.results.filter((entry) => entry.ok).length}/${response.results.length} 个项目执行成功。`,
+        text: `${response.results.filter((entry) => entry.ok).length}/${response.results.length} 个机器人执行成功。`,
       });
       reloadProjects(activeId);
     } catch (error) {
@@ -535,7 +535,7 @@ export default function App() {
       setSmokeTestResult(response);
       setNotice({
         tone: response.ok ? "success" : "error",
-        text: `${projectId} smoke test ${response.summary.passed}/${response.summary.total} 通过。当前模型：${response.summary.provider ?? "unknown"}/${response.summary.model ?? "unknown"}`,
+        text: `${projectId} 测试 ${response.summary.passed}/${response.summary.total} 通过。当前模型：${response.summary.provider ?? "unknown"}/${response.summary.model ?? "unknown"}`,
       });
       reloadProjects(projectId);
     } catch (error) {
@@ -570,9 +570,9 @@ export default function App() {
 
       const restartDetail = response.restartTriggered
         ? response.result?.ok
-          ? "运行中的项目已经重启。"
+          ? "运行中的机器人已经重启。"
           : `重启失败：${response.result?.stderr || response.result?.stdout || "请查看动作历史。"}`
-        : "项目当前未运行，没有触发重启。";
+        : "当前未运行，没有触发重启。";
 
       setNotice({
         tone: response.ok ? "success" : "error",
@@ -614,9 +614,9 @@ export default function App() {
 
       const restartDetail = response.restartTriggered
         ? response.result?.ok
-          ? "运行中的项目已经重启。"
+          ? "运行中的机器人已经重启。"
           : `重启失败：${response.result?.stderr || response.result?.stdout || "请查看动作历史。"}`
-        : "项目当前未运行，没有触发重启。";
+        : "当前未运行，没有触发重启。";
 
       setNotice({
         tone: response.ok ? "success" : "error",
@@ -738,18 +738,18 @@ export default function App() {
     if (editorStatus === "loading") {
       overlayPanel = (
         <aside className="detail-panel">
-          <p className="panel-kicker">编辑项目</p>
-          <h2>正在读取注册表详情</h2>
-          <p className="muted-copy">准备把 gateway、路径和命令字段填进编辑表单。</p>
+          <p className="panel-kicker">编辑机器人</p>
+          <h2>正在读取详情</h2>
+          <p className="muted-copy">正在加载机器人设置，请稍候。</p>
         </aside>
       );
     } else if (editorStatus === "error") {
       overlayPanel = (
         <aside className="detail-panel">
-          <p className="panel-kicker">编辑项目</p>
+          <p className="panel-kicker">编辑机器人</p>
           <h2>读取失败</h2>
           <div className="callout-box callout-box-danger">
-            {editorErrorMessage ?? "无法读取这个项目的注册表详情。"}
+            {editorErrorMessage ?? "无法读取这个机器人的详情。"}
           </div>
           <div className="panel-action-row">
             <button type="button" className="ghost-button" onClick={closeEditorPanel}>
@@ -790,20 +790,20 @@ export default function App() {
     <main className="shell">
       <section className="hero">
         <div className="hero-copy">
-          <p className="eyebrow">OpenClaw Control Panel</p>
-          <h1>多项目控制台</h1>
+          <p className="eyebrow">OPENCLAW</p>
+          <h1>机器人管理</h1>
         </div>
 
         <div className="hero-actions">
           <button type="button" className="primary-button" onClick={openCreatePanel}>
-            新增项目
+            创建新机器人
           </button>
           <button
             type="button"
             className="ghost-button"
             onClick={() => setReloadToken((value) => value + 1)}
           >
-            刷新项目
+            刷新
           </button>
           <button
             type="button"
@@ -818,24 +818,19 @@ export default function App() {
 
       <section className="summary-grid">
         <article className="summary-card">
-          <span className="summary-label">项目总数</span>
+          <span className="summary-label">机器人总数</span>
           <strong>{data?.summary.totalProjects ?? 0}</strong>
-          <span className="summary-hint">一项目一 Gateway</span>
+          <span className="summary-hint">已创建的机器人数量</span>
         </article>
         <article className="summary-card">
           <span className="summary-label">运行中</span>
           <strong>{data?.summary.runningProjects ?? 0}</strong>
-          <span className="summary-hint">可直接打开 Control UI</span>
+          <span className="summary-hint">当前正在运行</span>
         </article>
         <article className="summary-card">
-          <span className="summary-label">健康</span>
+          <span className="summary-label">在线</span>
           <strong>{data?.summary.healthyProjects ?? 0}</strong>
-          <span className="summary-hint">基于项目级探针统计</span>
-        </article>
-        <article className="summary-card">
-          <span className="summary-label">Auth 覆盖</span>
-          <strong>{data?.summary.authOverrides ?? 0}</strong>
-          <span className="summary-hint">其余项目继承 Control Panel 默认 auth</span>
+          <span className="summary-hint">运行且响应正常</span>
         </article>
       </section>
 
@@ -859,21 +854,20 @@ export default function App() {
       <section className="workspace-panel">
         <div className="workspace-toolbar">
           <div>
-            <p className="panel-kicker">项目视图</p>
-            <h2>项目卡片</h2>
+            <h2>我的机器人</h2>
           </div>
         </div>
 
         {status === "loading" ? (
           <div className="state-card">
-            <h3>正在加载项目</h3>
-            <p>请求同源 `GET /api/projects`，准备构建 Control Panel 视图。</p>
+            <h3>正在加载</h3>
+            <p>正在获取机器人列表，请稍候。</p>
           </div>
         ) : null}
 
         {status === "error" ? (
           <div className="state-card state-card-error">
-            <h3>项目列表加载失败</h3>
+            <h3>加载失败</h3>
             <p>{errorMessage}</p>
           </div>
         ) : null}
@@ -885,7 +879,7 @@ export default function App() {
               <input
                 value={search}
                 onChange={(event) => setSearch(event.target.value)}
-                placeholder="按项目名、路径、tag、auth 搜索"
+                placeholder="搜索机器人..."
               />
             </label>
 
@@ -895,8 +889,8 @@ export default function App() {
 
             {filteredProjects.length === 0 ? (
               <div className="state-card state-card-empty" style={{ marginTop: 18 }}>
-                <h3>没有匹配的项目</h3>
-                <p>试试清空搜索条件，或者先新增一个要纳管的 OpenClaw 项目。</p>
+                <h3>没有匹配的机器人</h3>
+                <p>试试清空搜索条件，或者先创建一个新机器人。</p>
               </div>
             ) : (
               <div className="projects-grid">
@@ -951,17 +945,17 @@ export default function App() {
             )}
 
             <ActionHistoryPanel
-              title={expandedProject ? `${expandedProject.name} 最近动作` : "全局最近动作"}
+              title={expandedProject ? `${expandedProject.name} 最近操作` : "最近操作"}
               subtitle={
                 expandedProject
-                  ? "这里会保留这个项目最近的生命周期、批量变更和注册表修改记录。"
-                  : "这里会保留整个 Control Panel 最近的操作记录。"
+                  ? "显示这个机器人最近的操作记录。"
+                  : "显示最近的操作记录"
               }
               items={visibleHistoryItems}
               emptyMessage={
                 expandedProject
-                  ? "这个项目还没有动作历史。"
-                  : "还没有任何动作历史，执行一次操作后这里就会出现。"
+                  ? "这个机器人还没有操作记录。"
+                  : "还没有任何操作记录，执行一次操作后这里就会出现。"
               }
             />
           </>

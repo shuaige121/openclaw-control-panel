@@ -55,10 +55,10 @@ type ProjectDetailProps = {
 };
 
 const bulkDescriptions: Record<BulkIntent, string> = {
-  hooks: "对选中项目批量启用、禁用或分发 hooks.internal.entries.* 相关改动。",
-  skills: "对选中项目批量分发 skill 目录，并 patch skills.entries.* 或 agent skill allowlist。",
-  memory: "对选中项目批量追加或删除 Control Panel 写入的记忆块，不直接改 SQLite 索引。",
-  config: "对选中项目批量做安全的配置 patch，适合少量高频字段。",
+  hooks: "对选中机器人批量启用或禁用 Hook。",
+  skills: "对选中机器人批量启用或禁用 Skill。",
+  memory: "对选中机器人批量追加或删除记忆内容。",
+  config: "对选中机器人批量修改配置。",
 };
 
 const compatibilityTone: Record<ProjectListItem["compatibility"]["status"], string> = {
@@ -116,7 +116,7 @@ const workspaceAccessLabel: Record<ProjectListItem["sandbox"]["workspaceAccess"]
 const skillSourceLabel: Record<ProjectListItem["skills"]["catalogEntries"][number]["source"], string> = {
   bundled: "官方",
   managed: "共享",
-  workspace: "项目",
+  workspace: "本地",
   config_only: "仅配置",
 };
 
@@ -224,10 +224,10 @@ export function ProjectDetail({
     }
     return (
       <aside className="detail-panel">
-        <p className="panel-kicker">项目详情</p>
-        <h2>选择一个项目</h2>
+        <p className="panel-kicker">机器人详情</p>
+        <h2>选择一个机器人</h2>
         <p className="muted-copy">
-          点击任意一个项目卡片查看详情。
+          点击任意一个机器人查看详情。
         </p>
       </aside>
     );
@@ -254,7 +254,7 @@ export function ProjectDetail({
         <>
           <header className="detail-header">
             <div>
-              <p className="panel-kicker">项目详情</p>
+              <p className="panel-kicker">机器人详情</p>
               <h2>{project.name}</h2>
             </div>
             <div className="project-badges">
@@ -272,13 +272,13 @@ export function ProjectDetail({
 
       <div className="detail-actions">
         <a href={project.endpoints.controlUiUrl} target="_blank" rel="noreferrer">
-          打开项目 Control UI &#8599;
+          打开控制台 &#8599;
         </a>
         <a href={project.endpoints.gatewayUrl} target="_blank" rel="noreferrer">
-          打开 Gateway &#8599;
+          打开服务 &#8599;
         </a>
         <a href={project.endpoints.healthUrl} target="_blank" rel="noreferrer">
-          打开 Health &#8599;
+          健康检查 &#8599;
         </a>
       </div>
 
@@ -308,7 +308,7 @@ export function ProjectDetail({
           {activeAction === "restart" ? "重启中..." : "重启"}
         </button>
         <button type="button" className="ghost-button" onClick={() => onEdit(project.id)}>
-          编辑注册表
+          编辑设置
         </button>
         <button
           type="button"
@@ -316,7 +316,7 @@ export function ProjectDetail({
           onClick={() => onScanCompatibility(project.id)}
           disabled={scanningCompatibility || activeAction !== null}
         >
-          {scanningCompatibility ? "扫描中..." : "重新扫描兼容性"}
+          {scanningCompatibility ? "检测中..." : "重新检测"}
         </button>
         <button
           type="button"
@@ -324,7 +324,7 @@ export function ProjectDetail({
           onClick={() => onRunSmokeTest(project.id)}
           disabled={smokeTesting || activeAction !== null}
         >
-          {smokeTesting ? "测试中..." : "运行 Smoke Test"}
+          {smokeTesting ? "测试中..." : "运行测试"}
         </button>
         <button
           type="button"
@@ -332,7 +332,7 @@ export function ProjectDetail({
           onClick={() => onDelete(project.id)}
           disabled={deleting}
         >
-          {deleting ? "删除中..." : "删除项目"}
+          {deleting ? "删除中..." : "删除机器人"}
         </button>
       </div>
 
@@ -345,7 +345,7 @@ export function ProjectDetail({
             aria-expanded={showChannelConfig}
             aria-controls={`channel-config-panel-${projectId}`}
           >
-            {showChannelConfig ? "Channel 配置 ▲" : "Channel 配置 ▼"}
+            {showChannelConfig ? "消息通道 ▲" : "消息通道 ▼"}
           </button>
         </div>
         {showChannelConfig ? (
@@ -383,7 +383,7 @@ export function ProjectDetail({
       </section>
 
       <section className="detail-section">
-        <p className="section-label">Smoke Test</p>
+        <p className="section-label">功能测试</p>
         {activeSmokeResult ? (
           <>
             <div className="callout-box">
@@ -415,25 +415,25 @@ export function ProjectDetail({
           </>
         ) : (
           <div className="callout-box callout-box-muted">
-            还没有跑过 smoke test。它会问 4 个固定问题，检查模型识别、工具调用和上下文承接。
+            还没有运行过测试。点击"运行测试"检查机器人是否工作正常。
           </div>
         )}
       </section>
 
       <section className="detail-section">
-        <p className="section-label">Gateway / Auth</p>
+        <p className="section-label">服务 / 认证</p>
         <dl className="detail-list">
           <div>
-            <dt>默认 Control Panel auth</dt>
+            <dt>默认认证</dt>
             <dd>{managerAuth?.label ?? "未配置"}</dd>
           </div>
           <div>
-            <dt>当前项目 auth</dt>
+            <dt>当前机器人认证</dt>
             <dd>{project.auth.label}</dd>
           </div>
           <div>
             <dt>覆盖模式</dt>
-            <dd>{project.auth.mode === "inherit_manager" ? "继承默认" : "项目自定义"}</dd>
+            <dd>{project.auth.mode === "inherit_manager" ? "继承默认" : "自定义"}</dd>
           </div>
           <div>
             <dt>最后探测</dt>
@@ -449,7 +449,7 @@ export function ProjectDetail({
           <strong>最近实测：</strong>{" "}
           {project.model.lastObservedRef
             ? `${project.model.lastObservedProvider ?? "unknown"} / ${project.model.lastObservedRef}`
-            : "还没有 smoke test 数据"}
+            : "还没有测试数据"}
           <br />
           <strong>实测时间：</strong> {formatLastSeen(project.model.lastObservedAt)}
           <br />
@@ -500,7 +500,7 @@ export function ProjectDetail({
             onChange={(event) => setRestartIfRunning(event.target.checked)}
             disabled={modelUpdating}
           />
-          <span>项目运行中时自动重启，让模型变更立即生效</span>
+          <span>运行中时自动重启，让模型变更立即生效</span>
         </label>
         <div className="panel-action-row">
           <button
@@ -544,7 +544,7 @@ export function ProjectDetail({
             onChange={(event) => setRestartMemoryIfRunning(event.target.checked)}
             disabled={memoryUpdating}
           />
-          <span>项目运行中时自动重启，让记忆策略立即生效</span>
+          <span>运行中时自动重启，让记忆策略立即生效</span>
         </label>
         <div className="panel-action-row">
           <button
@@ -646,7 +646,7 @@ export function ProjectDetail({
           </div>
         ) : (
           <div className="callout-box callout-box-muted">
-            当前项目还没有任何 Hook 条目，直接在上面填名字就能创建并启用。
+            还没有任何 Hook 条目，直接在上面填名字就能创建并启用。
           </div>
         )}
       </section>
@@ -760,7 +760,7 @@ export function ProjectDetail({
           </div>
         ) : (
           <div className="callout-box callout-box-muted">
-            当前项目还没有任何 Skill 条目。可以直接输入名字启用，也可以从 datalist 里选官方或本地 Skill。
+            还没有任何 Skill 条目。可以直接输入名字启用，也可以从列表里选择。
           </div>
         )}
       </section>
@@ -830,7 +830,7 @@ export function ProjectDetail({
             onChange={(event) => setRestartTemplateIfRunning(event.target.checked)}
             disabled={templateApplying || templates.length === 0}
           />
-          <span>项目运行中时自动重启，让模板立即生效</span>
+          <span>运行中时自动重启，让模板立即生效</span>
         </label>
         <div className="panel-action-row">
           <button
@@ -870,21 +870,21 @@ export function ProjectDetail({
       <section className="detail-section">
         <p className="section-label">单个与批量</p>
         <div className="callout-box">
-          <strong>单项目深控：</strong> 直接跳它自己的 Control UI。<br />
-          <strong>批量动作：</strong> 由 Control Panel 对选中项目统一执行，不去同时嵌多个 UI。
+          <strong>单个管理：</strong> 打开这个机器人自己的控制台。<br />
+          <strong>批量操作：</strong> 对选中的多个机器人统一执行操作。
         </div>
         <div className="callout-box callout-box-muted">
-          OpenClaw Control UI 默认禁止 iframe 内嵌，所以第一版仍以新标签打开为主。
+          控制台以新标签页打开。
         </div>
       </section>
 
       <section className="detail-section">
         <p className="section-label">批量上下文</p>
         <div className="callout-box">
-          <strong>当前已选：</strong> {selectedCount} 个项目
+          <strong>当前已选：</strong> {selectedCount} 个机器人
           <br />
           <strong>当前面板：</strong>{" "}
-          {bulkIntent ? bulkDescriptions[bulkIntent] : "先在上方批量栏里选一个操作类型。"}
+          {bulkIntent ? bulkDescriptions[bulkIntent] : "先在上方选择一个批量操作类型。"}
         </div>
       </section>
     </>

@@ -121,7 +121,7 @@ export function ActionHistoryPanel({
     <aside className="detail-panel">
       <header className="detail-header">
         <div>
-          <p className="panel-kicker">操作记录</p>
+          <p className="panel-kicker">最近操作</p>
           <h2>{title}</h2>
         </div>
       </header>
