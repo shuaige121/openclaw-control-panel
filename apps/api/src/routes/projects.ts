@@ -78,17 +78,31 @@ function parseTemplateApplyBody(value: unknown): {
     throw new HttpError(400, "template apply body must be an object.");
   }
 
+  const VALID_TEMPLATE_IDS: ProjectTemplateId[] = [
+    "general",
+    "stateless",
+    "sandboxed",
+    "ultramarines",
+    "sisters-of-silence",
+    "iron-hands",
+    "blood-angels",
+    "dark-angels",
+  ];
+
   const payload = value as Record<string, unknown>;
   const templateId = payload.templateId;
-  if (templateId !== "general" && templateId !== "stateless" && templateId !== "sandboxed") {
-    throw new HttpError(400, 'templateId must be "general", "stateless", or "sandboxed".');
+  if (typeof templateId !== "string" || !VALID_TEMPLATE_IDS.includes(templateId as ProjectTemplateId)) {
+    throw new HttpError(
+      400,
+      `templateId must be one of: ${VALID_TEMPLATE_IDS.map((id) => `"${id}"`).join(", ")}.`,
+    );
   }
 
   const restartIfRunning =
     payload.restartIfRunning === undefined ? true : Boolean(payload.restartIfRunning);
 
   return {
-    templateId,
+    templateId: templateId as ProjectTemplateId,
     restartIfRunning,
   };
 }

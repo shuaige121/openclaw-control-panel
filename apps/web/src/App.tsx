@@ -5,6 +5,7 @@ import { BulkToolbar } from "./components/bulk-toolbar";
 import { ProjectEditor } from "./components/project-editor";
 import { ProjectCard } from "./components/project-card";
 import { ProjectDetail } from "./components/project-detail";
+import { useTheme } from "./theme";
 import type {
   ActionHistoryResponse,
   BulkActionExecutePayload,
@@ -19,6 +20,7 @@ import type {
   ProjectSmokeTestResponse,
   ProjectTemplateApplyResponse,
   ProjectTemplateDefinition,
+  ProjectTemplateId,
   ProjectTemplateListResponse,
   ProjectUpsertPayload,
   ProjectsResponse,
@@ -284,7 +286,7 @@ export default function App() {
 
   async function submitProject(params: {
     project: ProjectUpsertPayload;
-    templateId: "general" | "stateless" | "sandboxed" | null;
+    templateId: ProjectTemplateId | null;
     applyTemplateAfterCreate: boolean;
   }) {
     setMutationState("saving");
@@ -356,7 +358,7 @@ export default function App() {
   async function applyTemplateToProject(
     projectId: string,
     payload: {
-      templateId: "general" | "stateless" | "sandboxed";
+      templateId: ProjectTemplateId;
       restartIfRunning: boolean;
     },
   ) {
@@ -713,6 +715,8 @@ export default function App() {
     }
   }
 
+  const { theme, toggle: toggleTheme } = useTheme();
+
   let sidePanel;
 
   if (panelMode === "create") {
@@ -857,6 +861,14 @@ export default function App() {
             onClick={() => setReloadToken((value) => value + 1)}
           >
             刷新项目
+          </button>
+          <button
+            type="button"
+            className="theme-toggle"
+            onClick={toggleTheme}
+            title={theme === "wh40k" ? "切换到标准主题" : "切换到战锤40K主题"}
+          >
+            {theme === "wh40k" ? "\uD83D\uDDA5\uFE0F" : "\u2694\uFE0F"}
           </button>
         </div>
       </section>

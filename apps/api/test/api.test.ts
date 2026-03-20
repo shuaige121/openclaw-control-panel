@@ -604,7 +604,7 @@ test("project template route exposes catalog and applies sandboxed template to c
   const templatesResponse = await api.request.get("/api/projects/templates").expect(200);
   assert.deepEqual(
     templatesResponse.body.items.map((item: { id: string }) => item.id),
-    ["general", "stateless", "sandboxed"],
+    ["general", "stateless", "sandboxed", "ultramarines", "sisters-of-silence", "iron-hands", "blood-angels", "dark-angels"],
   );
 
   const applyResponse = await api.request

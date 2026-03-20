@@ -24,7 +24,15 @@ export type ProjectSandboxScope = "session" | "agent" | "shared";
 export type ProjectSandboxWorkspaceAccess = "none" | "ro" | "rw";
 export type ProjectHookSource = "internal";
 export type ProjectSkillSource = "bundled" | "managed" | "workspace" | "config_only";
-export type ProjectTemplateId = "general" | "stateless" | "sandboxed";
+export type ProjectTemplateId =
+  | "general"
+  | "stateless"
+  | "sandboxed"
+  | "ultramarines"
+  | "sisters-of-silence"
+  | "iron-hands"
+  | "blood-angels"
+  | "dark-angels";
 export type ProjectSmokeTestScenarioId =
   | "model_identity"
   | "tool_exec_time"
