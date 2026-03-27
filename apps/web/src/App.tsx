@@ -14,12 +14,13 @@ import type {
   ProjectActionName,
   ProjectActionResponse,
   ProjectCompatibilityScanResponse,
+  ProjectCreateResponse,
   ProjectMemoryModeUpdateResponse,
   ProjectModelUpdateResponse,
   ProjectTemplateApplyResponse,
   ProjectTemplateDefinition,
+  ProjectTemplateId,
   ProjectTemplateListResponse,
-  ProjectUpsertPayload,
   ProjectsResponse,
 } from "./types";
 
@@ -280,9 +281,10 @@ export default function App() {
   }
 
   async function submitProject(params: {
-    project: ProjectUpsertPayload;
-    templateId: "general" | "stateless" | "sandboxed" | null;
+    project: Record<string, unknown>;
+    templateId: ProjectTemplateId | null;
     applyTemplateAfterCreate: boolean;
+    createInstance: boolean;
   }) {
     setMutationState("saving");
     setEditorErrorMessage(null);
@@ -290,7 +292,7 @@ export default function App() {
 
     try {
       if (panelMode === "create") {
-        const response = await requestApi<{ ok: true; projectId: string }>("/api/projects", {
+        const response = await requestApi<ProjectCreateResponse>("/api/projects", {
           method: "POST",
           headers: {
             Accept: "application/json",
@@ -299,7 +301,7 @@ export default function App() {
           body: JSON.stringify(params.project),
         });
 
-        if (params.applyTemplateAfterCreate && params.templateId) {
+        if (!params.createInstance && params.applyTemplateAfterCreate && params.templateId) {
           await requestApi<ProjectTemplateApplyResponse>(
             `/api/projects/${response.projectId}/apply-template`,
             {
@@ -319,16 +321,22 @@ export default function App() {
         setNotice({
           tone: "success",
           text:
-            params.applyTemplateAfterCreate && params.templateId
-              ? `项目 ${response.projectId} 已创建，并套用了 ${params.templateId} 模板。`
-              : `项目 ${response.projectId} 已写入注册表。`,
+            response.instance
+              ? `项目 ${response.projectId} 已创建。端口 ${response.instance.port} 已分配${
+                  response.appliedTemplateId ? `，并套用了 ${response.appliedTemplateId} 模板。` : "。"
+                }`
+              : params.applyTemplateAfterCreate && params.templateId
+                ? `项目 ${response.projectId} 已创建，并套用了 ${params.templateId} 模板。`
+                : `项目 ${response.projectId} 已写入注册表。`,
         });
         closeEditorPanel();
         reloadProjects(response.projectId);
         return;
       }
 
-      const projectId = editorProject?.id ?? params.project.id;
+      const projectId =
+        editorProject?.id ??
+        (typeof params.project.id === "string" ? params.project.id : "");
       const response = await requestApi<{ ok: true; projectId: string }>(`/api/projects/${projectId}`, {
         method: "PATCH",
         headers: {
@@ -353,7 +361,7 @@ export default function App() {
   async function applyTemplateToProject(
     projectId: string,
     payload: {
-      templateId: "general" | "stateless" | "sandboxed";
+      templateId: ProjectTemplateId;
       restartIfRunning: boolean;
     },
   ) {

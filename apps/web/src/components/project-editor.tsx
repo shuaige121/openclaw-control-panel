@@ -10,7 +10,6 @@ import type {
   ProjectLifecycleMode,
   ProjectTemplateDefinition,
   ProjectTemplateId,
-  ProjectUpsertPayload,
 } from "../types";
 
 type ProjectEditorProps = {
@@ -22,9 +21,10 @@ type ProjectEditorProps = {
   errorMessage: string | null;
   onCancel: () => void;
   onSubmit: (payload: {
-    project: ProjectUpsertPayload;
+    project: Record<string, unknown>;
     templateId: ProjectTemplateId | null;
     applyTemplateAfterCreate: boolean;
+    createInstance: boolean;
   }) => Promise<void>;
 };
 
@@ -52,6 +52,8 @@ type EditorState = {
   lifecycleBind: ProjectGatewayBindMode;
   lifecycleAllowUnconfigured: boolean;
   lifecycleStartupTimeoutMs: string;
+  provisionInstance: boolean;
+  provisionModel: string;
   templateId: ProjectTemplateId;
   applyTemplateAfterCreate: boolean;
   bulkHooks: boolean;
@@ -92,8 +94,10 @@ function createDefaultState(): EditorState {
     lifecycleBind: "loopback",
     lifecycleAllowUnconfigured: true,
     lifecycleStartupTimeoutMs: "15000",
+    provisionInstance: true,
+    provisionModel: "",
     templateId: "general",
-    applyTemplateAfterCreate: false,
+    applyTemplateAfterCreate: true,
     ...DEFAULT_CAPABILITIES,
   };
 }
@@ -129,6 +133,8 @@ function createStateFromProject(project: ProjectDetailResponse["registry"]): Edi
       project.lifecycle.mode === "managed_openclaw"
         ? String(project.lifecycle.startupTimeoutMs)
         : "15000",
+    provisionInstance: false,
+    provisionModel: "",
     templateId: "general",
     applyTemplateAfterCreate: false,
     bulkHooks: project.capabilities.bulkHooks,
@@ -186,8 +192,19 @@ export function ProjectEditor({
     event.preventDefault();
     setLocalError(null);
 
-    const port = Number.parseInt(state.port, 10);
-    if (!Number.isInteger(port) || port <= 0 || port > 65535) {
+    const isProvisionCreate = mode === "create" && state.provisionInstance;
+    const trimmedPort = state.port.trim();
+    const parsedPort = trimmedPort.length > 0 ? Number.parseInt(trimmedPort, 10) : undefined;
+
+    if (
+      parsedPort !== undefined &&
+      (!Number.isInteger(parsedPort) || parsedPort <= 0 || parsedPort > 65535)
+    ) {
+      setLocalError("Gateway port 必须是 1 到 65535 之间的整数。");
+      return;
+    }
+
+    if (!isProvisionCreate && parsedPort === undefined) {
       setLocalError("Gateway port 必须是 1 到 65535 之间的整数。");
       return;
     }
@@ -206,21 +223,19 @@ export function ProjectEditor({
       return;
     }
 
-    const payload: ProjectUpsertPayload = {
+    const effectiveLifecycleMode =
+      mode === "create" && state.provisionInstance ? "managed_openclaw" : state.lifecycleMode;
+
+    const payload: Record<string, unknown> = {
       id: state.id.trim().toLowerCase(),
       name: state.name.trim(),
       description: state.description.trim(),
       gateway: {
         protocol: state.protocol,
         host: state.host.trim(),
-        port,
+        ...(parsedPort !== undefined ? { port: parsedPort } : {}),
       },
       tags: toTagArray(state.tags),
-      paths: {
-        rootPath: state.rootPath.trim(),
-        configPath: state.configPath.trim(),
-        workspacePath: state.workspacePath.trim(),
-      },
       auth:
         state.authMode === "inherit_manager"
           ? {
@@ -233,7 +248,7 @@ export function ProjectEditor({
               ...(state.authSecret.trim().length > 0 ? { secret: state.authSecret.trim() } : {}),
             },
       lifecycle:
-        state.lifecycleMode === "managed_openclaw"
+        effectiveLifecycleMode === "managed_openclaw"
           ? {
               mode: "managed_openclaw",
               nodePath: state.lifecycleNodePath.trim() || null,
@@ -256,10 +271,28 @@ export function ProjectEditor({
       },
     };
 
+    if (!isProvisionCreate) {
+      payload.paths = {
+        rootPath: state.rootPath.trim(),
+        configPath: state.configPath.trim(),
+        workspacePath: state.workspacePath.trim(),
+      };
+    }
+
+    if (isProvisionCreate) {
+      payload.createInstance = true;
+      if (state.provisionModel.trim().length > 0) {
+        payload.model = state.provisionModel.trim();
+      }
+      payload.templateId = state.templateId;
+      payload.applyTemplateAfterCreate = state.applyTemplateAfterCreate;
+    }
+
     await onSubmit({
       project: payload,
       templateId: mode === "create" ? state.templateId : null,
       applyTemplateAfterCreate: mode === "create" ? state.applyTemplateAfterCreate : false,
+      createInstance: isProvisionCreate,
     });
   }
 
@@ -287,6 +320,28 @@ export function ProjectEditor({
         {mode === "create" ? (
           <section className="detail-section">
             <p className="section-label">模板</p>
+            <label className="checkbox-field">
+              <input
+                type="checkbox"
+                checked={state.provisionInstance}
+                onChange={(event) => {
+                  const checked = event.target.checked;
+                  setState((current) => ({
+                    ...current,
+                    provisionInstance: checked,
+                    applyTemplateAfterCreate: checked ? true : current.applyTemplateAfterCreate,
+                    lifecycleMode: checked ? "managed_openclaw" : current.lifecycleMode,
+                  }));
+                }}
+                disabled={busy}
+              />
+              <span>创建并初始化新的 OpenClaw 实例</span>
+            </label>
+            <div className="callout-box callout-box-muted">
+              {state.provisionInstance
+                ? "创建时会自动找空闲 port、写入 openclaw.json、初始化 workspace，并把 main agent 的 auth/models 以共享链接方式接进来。"
+                : "关闭后就只是写一条 registry 记录，不会在磁盘上创建新的 OpenClaw 实例。"}
+            </div>
             <label className="form-field">
               <span>项目模板</span>
               <select
@@ -331,8 +386,23 @@ export function ProjectEditor({
                 onChange={(event) => updateField("applyTemplateAfterCreate", event.target.checked)}
                 disabled={busy || selectedTemplate === null}
               />
-              <span>创建后立即把模板写进目标项目的 `openclaw.json`</span>
+              <span>
+                {state.provisionInstance
+                  ? "创建时立即按模板写入 memory / sandbox 配置"
+                  : "创建后立即把模板写进目标项目的 `openclaw.json`"}
+              </span>
             </label>
+            {state.provisionInstance ? (
+              <label className="form-field">
+                <span>默认模型（留空用 provisioner 默认）</span>
+                <input
+                  value={state.provisionModel}
+                  onChange={(event) => updateField("provisionModel", event.target.value)}
+                  placeholder="例如 openai-codex/gpt-5.4"
+                  disabled={busy}
+                />
+              </label>
+            ) : null}
           </section>
         ) : null}
 
@@ -407,7 +477,7 @@ export function ProjectEditor({
               <input
                 value={state.port}
                 onChange={(event) => updateField("port", event.target.value)}
-                placeholder="18789"
+                placeholder={mode === "create" && state.provisionInstance ? "留空自动分配" : "18789"}
                 inputMode="numeric"
                 disabled={busy}
               />
@@ -415,38 +485,47 @@ export function ProjectEditor({
           </div>
         </section>
 
-        <section className="detail-section">
-          <p className="section-label">路径</p>
-          <div className="form-grid">
-            <label className="form-field form-field-full">
-              <span>Root Path</span>
-              <input
-                value={state.rootPath}
-                onChange={(event) => updateField("rootPath", event.target.value)}
-                placeholder="/srv/openclaw/projects/main"
-                disabled={busy}
-              />
-            </label>
-            <label className="form-field form-field-full">
-              <span>Config Path</span>
-              <input
-                value={state.configPath}
-                onChange={(event) => updateField("configPath", event.target.value)}
-                placeholder="/srv/openclaw/projects/main/openclaw.json"
-                disabled={busy}
-              />
-            </label>
-            <label className="form-field form-field-full">
-              <span>Workspace Path</span>
-              <input
-                value={state.workspacePath}
-                onChange={(event) => updateField("workspacePath", event.target.value)}
-                placeholder="/srv/openclaw/projects/main/workspace"
-                disabled={busy}
-              />
-            </label>
-          </div>
-        </section>
+        {mode === "create" && state.provisionInstance ? (
+          <section className="detail-section">
+            <p className="section-label">路径</p>
+            <div className="callout-box callout-box-muted">
+              manager 会自动生成 profile state 目录、`openclaw.json` 和 workspace 路径，不需要手填。
+            </div>
+          </section>
+        ) : (
+          <section className="detail-section">
+            <p className="section-label">路径</p>
+            <div className="form-grid">
+              <label className="form-field form-field-full">
+                <span>Root Path</span>
+                <input
+                  value={state.rootPath}
+                  onChange={(event) => updateField("rootPath", event.target.value)}
+                  placeholder="/srv/openclaw/projects/main"
+                  disabled={busy}
+                />
+              </label>
+              <label className="form-field form-field-full">
+                <span>Config Path</span>
+                <input
+                  value={state.configPath}
+                  onChange={(event) => updateField("configPath", event.target.value)}
+                  placeholder="/srv/openclaw/projects/main/openclaw.json"
+                  disabled={busy}
+                />
+              </label>
+              <label className="form-field form-field-full">
+                <span>Workspace Path</span>
+                <input
+                  value={state.workspacePath}
+                  onChange={(event) => updateField("workspacePath", event.target.value)}
+                  placeholder="/srv/openclaw/projects/main/workspace"
+                  disabled={busy}
+                />
+              </label>
+            </div>
+          </section>
+        )}
 
         <section className="detail-section">
           <p className="section-label">Auth</p>
@@ -507,15 +586,15 @@ export function ProjectEditor({
             <label className="form-field">
               <span>运行模式</span>
               <select
-                value={state.lifecycleMode}
+                value={mode === "create" && state.provisionInstance ? "managed_openclaw" : state.lifecycleMode}
                 onChange={(event) => updateField("lifecycleMode", event.target.value as ProjectLifecycleMode)}
-                disabled={busy}
+                disabled={busy || (mode === "create" && state.provisionInstance)}
               >
                 <option value="managed_openclaw">Manager 托管 OpenClaw</option>
                 <option value="custom_commands">自定义命令</option>
               </select>
             </label>
-            {state.lifecycleMode === "managed_openclaw" ? (
+            {((mode === "create" && state.provisionInstance) || state.lifecycleMode === "managed_openclaw") ? (
               <>
                 <label className="form-field">
                   <span>Bind</span>

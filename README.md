@@ -109,7 +109,9 @@ npm run dev
 ```
 
 > [!TIP]
-> **API** → `http://localhost:3000` &nbsp;&nbsp;|&nbsp;&nbsp; **Dashboard** → `http://localhost:5173`
+> **API** → `http://127.0.0.1:3000` &nbsp;&nbsp;|&nbsp;&nbsp; **Dashboard** → `http://127.0.0.1:5173`
+>
+> The manager binds to `127.0.0.1` by default. If you need LAN or reverse-proxy access, set `HOST=0.0.0.0` and keep `MANAGER_ALLOWED_IPS` configured.
 >
 > After `npm run build`, the API serves the dashboard on port 3000.
 
@@ -120,9 +122,12 @@ npm run dev
 <br/>
 
 ```bash
+HOST=0.0.0.0  # only when you intentionally need LAN / reverse-proxy access
 MANAGER_ALLOWED_IPS=127.0.0.1,::1,192.168.7.0/24
 MANAGER_TRUST_PROXY=1  # behind a reverse proxy
 ```
+
+The manager binds to `127.0.0.1` by default. If `HOST` is non-loopback and `MANAGER_ALLOWED_IPS` is empty, startup will refuse to continue unless `MANAGER_ALLOW_UNSAFE_BIND=1` is set.
 
 Supports exact IPs and IPv4 CIDR notation.
 

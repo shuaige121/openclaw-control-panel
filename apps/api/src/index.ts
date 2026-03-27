@@ -1,4 +1,10 @@
 import { parseAllowedIpsFromEnv } from "./lib/ip-allowlist";
+import {
+  assertSafeManagerBinding,
+  isLoopbackHost,
+  resolveHost,
+  resolvePort,
+} from "./lib/startup-config";
 import { createServer } from "./server";
 import { ActionHistoryService } from "./services/action-history";
 import {
@@ -7,47 +13,37 @@ import {
 } from "./services/manager-telegram-bot";
 import { ProjectRegistryService } from "./services/project-registry";
 
-const DEFAULT_PORT = 3000;
-const DEFAULT_HOST = "0.0.0.0";
-
-function resolvePort(rawPort: string | undefined): number {
-  if (rawPort === undefined) {
-    return DEFAULT_PORT;
-  }
-
-  const port = Number.parseInt(rawPort, 10);
-
-  if (Number.isNaN(port) || port <= 0) {
-    throw new Error(`Invalid PORT value: ${rawPort}`);
-  }
-
-  return port;
-}
-
-function resolveHost(rawHost: string | undefined): string {
-  if (rawHost === undefined || rawHost.trim().length === 0) {
-    return DEFAULT_HOST;
-  }
-
-  return rawHost.trim();
-}
-
 const port = resolvePort(process.env.PORT);
 const host = resolveHost(process.env.HOST);
+const allowedIps = parseAllowedIpsFromEnv(process.env);
+const allowUnsafeBind = process.env.MANAGER_ALLOW_UNSAFE_BIND === "1";
 const registryService = new ProjectRegistryService();
 const actionHistoryService = new ActionHistoryService();
+
+assertSafeManagerBinding({
+  host,
+  allowedIps,
+  allowUnsafeBind,
+});
+
 const app = createServer({
   registryService,
   actionHistoryService,
   accessControl: {
-    allowedIps: parseAllowedIpsFromEnv(process.env),
+    allowedIps,
     trustProxy: process.env.MANAGER_TRUST_PROXY === "1",
   },
 });
 const managerTelegramBotConfig = readManagerTelegramBotConfig(process.env);
 
 app.listen(port, host, () => {
-  console.log(`OpenClaw manager API listening on http://${host}:${port}`);
+  console.log(`OpenClaw Control Panel API listening on http://${host}:${port}`);
+
+  if (allowUnsafeBind && !isLoopbackHost(host) && allowedIps.length === 0) {
+    console.warn(
+      `[security] MANAGER_ALLOW_UNSAFE_BIND=1 allows binding ${host} without MANAGER_ALLOWED_IPS. Only use this on a trusted network.`,
+    );
+  }
 
   if (managerTelegramBotConfig) {
     const botService = new ManagerTelegramBotService({

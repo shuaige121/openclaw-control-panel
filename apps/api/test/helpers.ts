@@ -213,6 +213,12 @@ export async function createApiTestContext(
       allowedIps?: string[];
       trustProxy?: boolean;
     };
+    instanceCreator?: {
+      homeDir?: string;
+      managerRootDir?: string;
+      uvBin?: string;
+      authLinkMode?: "symlink" | "copy";
+    };
   },
 ): Promise<ApiTestContext> {
   const tempDir = await mkdtemp(path.join(os.tmpdir(), "openclaw-manager-api-test-"));
@@ -243,6 +249,7 @@ export async function createApiTestContext(
     actionHistoryService,
     serveWeb: false,
     accessControl: options?.accessControl,
+    instanceCreatorOptions: options?.instanceCreator,
   });
 
   return {

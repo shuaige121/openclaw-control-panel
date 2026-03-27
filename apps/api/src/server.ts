@@ -10,11 +10,14 @@ import { HttpError } from "./lib/http-error";
 import { createIpAllowlistMiddleware } from "./lib/ip-allowlist";
 import { WEB_DIST_DIR } from "./paths";
 import { createActionsRouter } from "./routes/actions";
+import { createAgentsRouter } from "./routes/agents";
 import { createBulkRouter } from "./routes/bulk";
 import { healthRouter } from "./routes/health";
+import { createChannelsRouter } from "./routes/channels";
 import { createProjectActionsRouter } from "./routes/project-actions";
 import { createProjectsRouter } from "./routes/projects";
 import { ActionHistoryService } from "./services/action-history";
+import type { CreateInstanceRuntimeOptions } from "./services/instance-creator";
 import { ProjectRegistryService } from "./services/project-registry";
 
 type AccessControlOptions = {
@@ -28,6 +31,7 @@ type CreateServerOptions = {
   serveWeb?: boolean;
   webDistDir?: string;
   accessControl?: AccessControlOptions;
+  instanceCreatorOptions?: CreateInstanceRuntimeOptions;
 };
 
 export function createServer(options: CreateServerOptions = {}) {
@@ -53,10 +57,25 @@ export function createServer(options: CreateServerOptions = {}) {
   app.use("/api/health", healthRouter);
   app.use("/api/bulk", createBulkRouter({ registryService, actionHistoryService }));
   app.use(
+    "/api/projects",
+    createAgentsRouter({ registryService, actionHistoryService }),
+  );
+  app.use(
+    "/api/projects",
+    createChannelsRouter({ registryService, actionHistoryService }),
+  );
+  app.use(
     "/api/projects/:id/actions",
     createProjectActionsRouter({ registryService, actionHistoryService }),
   );
-  app.use("/api/projects", createProjectsRouter({ registryService, actionHistoryService }));
+  app.use(
+    "/api/projects",
+    createProjectsRouter({
+      registryService,
+      actionHistoryService,
+      instanceCreatorOptions: options.instanceCreatorOptions,
+    }),
+  );
 
   if (hasBuiltWeb) {
     app.use(express.static(webDistDir));

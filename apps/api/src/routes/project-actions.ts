@@ -2,7 +2,7 @@ import path from "node:path";
 import { Router, type NextFunction, type Request, type Response } from "express";
 import { HttpError } from "../lib/http-error";
 import { ActionHistoryService } from "../services/action-history";
-import { buildProjectListResponse } from "../services/project-probe";
+import { buildProjectListItem } from "../services/project-probe";
 import { executeProjectAction } from "../services/project-command-runner";
 import { type ProjectRegistryService } from "../services/project-registry";
 import type { ProjectActionName } from "../types/project";
@@ -64,8 +64,8 @@ export function createProjectActionsRouter(options: {
         actionName: action,
       });
       const registry = await registryService.readRegistry();
-      const list = await buildProjectListResponse(registry);
-      const item = list.items.find((entry) => entry.id === project.id) ?? null;
+      const projectRecord = registry.projects.find((entry) => entry.id === project.id) ?? project;
+      const item = await buildProjectListItem(projectRecord, registry);
 
       response.json({
         ok: commandResult.ok,

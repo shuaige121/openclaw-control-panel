@@ -19,6 +19,9 @@ import type {
   ProjectPaths,
   ProjectRegistryAuth,
   ProjectRegistryData,
+  ProjectSmokeTestResponse,
+  ProjectSmokeTestScenarioId,
+  ProjectSmokeTestScenarioResult,
   StoredAuthSecretProfile,
   StoredProjectRecord,
 } from "../types/project";
@@ -32,6 +35,12 @@ const COMPATIBILITY_CHECK_NAMES: ProjectCompatibilityCheckName[] = [
   "hooks",
   "skills",
   "memory",
+];
+const SMOKE_TEST_SCENARIO_IDS: ProjectSmokeTestScenarioId[] = [
+  "model_identity",
+  "tool_exec_time",
+  "tool_web_fetch",
+  "context_recall",
 ];
 
 function isObject(value: unknown): value is Record<string, unknown> {
@@ -249,6 +258,80 @@ function parseCompatibility(
   };
 }
 
+function expectNullableString(value: unknown, fieldName: string): string | null {
+  if (value === null) {
+    return null;
+  }
+
+  return expectString(value, fieldName);
+}
+
+function expectSmokeTestScenarioId(
+  value: unknown,
+  fieldName: string,
+): ProjectSmokeTestScenarioId {
+  if (
+    typeof value !== "string" ||
+    !SMOKE_TEST_SCENARIO_IDS.includes(value as ProjectSmokeTestScenarioId)
+  ) {
+    throw new HttpError(
+      400,
+      `${fieldName} must be one of ${SMOKE_TEST_SCENARIO_IDS.join(", ")}.`,
+    );
+  }
+
+  return value as ProjectSmokeTestScenarioId;
+}
+
+function parseSmokeTestScenarioResult(
+  value: unknown,
+  fieldName: string,
+): ProjectSmokeTestScenarioResult {
+  const object = expectObject(value, fieldName);
+
+  return {
+    id: expectSmokeTestScenarioId(object.id, `${fieldName}.id`),
+    label: expectRequiredString(object.label, `${fieldName}.label`),
+    ok: expectBoolean(object.ok, `${fieldName}.ok`),
+    durationMs: parsePositiveInteger(object.durationMs, `${fieldName}.durationMs`, 0),
+    outputText: expectString(object.outputText, `${fieldName}.outputText`),
+    toolHint: expectNullableString(object.toolHint, `${fieldName}.toolHint`),
+    provider: expectNullableString(object.provider, `${fieldName}.provider`),
+    model: expectNullableString(object.model, `${fieldName}.model`),
+    error: expectNullableString(object.error, `${fieldName}.error`),
+  };
+}
+
+function parseSmokeTestResponse(
+  value: unknown,
+  fieldName: string,
+): ProjectSmokeTestResponse {
+  const object = expectObject(value, fieldName);
+  const summary = expectObject(object.summary, `${fieldName}.summary`);
+  const resultsValue = object.results;
+
+  if (!Array.isArray(resultsValue)) {
+    throw new HttpError(400, `${fieldName}.results must be an array.`);
+  }
+
+  return {
+    ok: expectBoolean(object.ok, `${fieldName}.ok`),
+    projectId: expectRequiredString(object.projectId, `${fieldName}.projectId`),
+    startedAt: expectRequiredString(object.startedAt, `${fieldName}.startedAt`),
+    finishedAt: expectRequiredString(object.finishedAt, `${fieldName}.finishedAt`),
+    sessionId: expectRequiredString(object.sessionId, `${fieldName}.sessionId`),
+    summary: {
+      passed: parsePositiveInteger(summary.passed, `${fieldName}.summary.passed`, 0),
+      total: parsePositiveInteger(summary.total, `${fieldName}.summary.total`, 0),
+      provider: expectNullableString(summary.provider, `${fieldName}.summary.provider`),
+      model: expectNullableString(summary.model, `${fieldName}.summary.model`),
+    },
+    results: resultsValue.map((entry, index) =>
+      parseSmokeTestScenarioResult(entry, `${fieldName}.results[${index}]`),
+    ),
+  };
+}
+
 function parsePaths(value: unknown, fieldName: string): ProjectPaths {
   const object = expectObject(value, fieldName);
 
@@ -411,6 +494,10 @@ function parseProjectRecord(value: unknown, fieldName: string): StoredProjectRec
     lifecycle: parseLifecycle(object.lifecycle, `${fieldName}.lifecycle`),
     capabilities: parseCapabilities(object.capabilities, `${fieldName}.capabilities`),
     compatibility: parseCompatibility(object.compatibility, `${fieldName}.compatibility`),
+    lastSmokeTest:
+      object.lastSmokeTest === undefined || object.lastSmokeTest === null
+        ? null
+        : parseSmokeTestResponse(object.lastSmokeTest, `${fieldName}.lastSmokeTest`),
   };
 }
 
@@ -543,6 +630,12 @@ function applyProjectPatch(current: StoredProjectRecord, value: unknown): Stored
       object.compatibility === undefined
         ? current.compatibility
         : parseCompatibility(object.compatibility, "project.compatibility", current.compatibility),
+    lastSmokeTest:
+      object.lastSmokeTest === undefined
+        ? current.lastSmokeTest
+        : object.lastSmokeTest === null
+          ? null
+          : parseSmokeTestResponse(object.lastSmokeTest, "project.lastSmokeTest"),
   };
 }
 
@@ -669,6 +762,32 @@ export class ProjectRegistryService {
       return {
         registry,
         result: registry.projects[index],
+      };
+    });
+  }
+
+  async updateProjectSmokeTest(
+    projectId: string,
+    smokeTest: ProjectSmokeTestResponse | null,
+  ): Promise<StoredProjectRecord> {
+    const normalizedId = parseProjectId(projectId, "projectId");
+
+    return this.updateRegistry((registry) => {
+      const index = registry.projects.findIndex((entry) => entry.id === normalizedId);
+
+      if (index === -1) {
+        throw new HttpError(404, `Project "${normalizedId}" was not found.`);
+      }
+
+      const project = {
+        ...registry.projects[index],
+        lastSmokeTest: smokeTest,
+      };
+      registry.projects[index] = project;
+
+      return {
+        registry,
+        result: project,
       };
     });
   }

@@ -1,0 +1,8 @@
+[project]
+name = "openclaw-manager-backend"
+version = "0.1.0"
+description = "Python provisioning and CLI helpers for OpenClaw Manager."
+requires-python = ">=3.11"
+
+[tool.uv]
+package = false

@@ -65,6 +65,8 @@ type BulkActionRequest =
     };
 
 type JsonObject = Record<string, unknown>;
+const CURRENT_MEMORY_BLOCK_NAMESPACE = "openclaw-control-panel";
+const LEGACY_MEMORY_BLOCK_NAMESPACE = ["openclaw", "observ", "atory"].join("-");
 
 function isObject(value: unknown): value is Record<string, unknown> {
   return typeof value === "object" && value !== null && !Array.isArray(value);
@@ -343,16 +345,19 @@ async function applySkillAction(
 
 function buildMemoryBlock(blockId: string, content: string): string {
   return [
-    `<!-- openclaw-manager:block:${blockId} -->`,
+    `<!-- ${CURRENT_MEMORY_BLOCK_NAMESPACE}:block:${blockId} -->`,
     content.trim(),
-    `<!-- /openclaw-manager:block:${blockId} -->`,
+    `<!-- /${CURRENT_MEMORY_BLOCK_NAMESPACE}:block:${blockId} -->`,
   ].join("\n");
 }
 
 function removeMemoryBlock(content: string, blockId: string): string {
   const escapedBlockId = blockId.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+  const namespacePattern = [CURRENT_MEMORY_BLOCK_NAMESPACE, LEGACY_MEMORY_BLOCK_NAMESPACE]
+    .map((namespace) => namespace.replace(/[.*+?^${}()|[\]\\]/g, "\\$&"))
+    .join("|");
   const pattern = new RegExp(
-    `\\n?<!-- openclaw-manager:block:${escapedBlockId} -->[\\s\\S]*?<!-- /openclaw-manager:block:${escapedBlockId} -->\\n?`,
+    `\\n?<!-- (?:${namespacePattern}):block:${escapedBlockId} -->[\\s\\S]*?<!-- /(?:${namespacePattern}):block:${escapedBlockId} -->\\n?`,
     "g",
   );
 
@@ -432,7 +437,7 @@ async function applyProjectAction(
       if (memoryProfile.mode !== "normal") {
         throw new HttpError(
           409,
-          `Project memory mode is ${memoryProfile.mode}; manager memory writes are blocked.`,
+          `Project memory mode is ${memoryProfile.mode}; Control Panel memory writes are blocked.`,
         );
       }
       message = await applyMemoryAction(project, request.payload);

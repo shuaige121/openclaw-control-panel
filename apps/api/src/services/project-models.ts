@@ -65,6 +65,9 @@ function buildModelProfileFromConfig(config: JsonObject): ProjectModelProfile {
     fallbackRefs: readFallbackRefs(model),
     catalogMode: isObject(defaults.models) ? "allowlist" : "open",
     configuredModels,
+    lastObservedProvider: null,
+    lastObservedRef: null,
+    lastObservedAt: null,
   };
 }
 
@@ -74,6 +77,9 @@ export function createEmptyModelProfile(): ProjectModelProfile {
     fallbackRefs: [],
     catalogMode: "open",
     configuredModels: [],
+    lastObservedProvider: null,
+    lastObservedRef: null,
+    lastObservedAt: null,
   };
 }
 

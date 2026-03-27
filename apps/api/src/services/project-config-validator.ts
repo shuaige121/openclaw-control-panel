@@ -6,6 +6,7 @@
  * to diagnose remotely.
  */
 
+import fs from "node:fs/promises";
 import { HttpError } from "../lib/http-error";
 
 type EnumRule = {
@@ -239,4 +240,44 @@ export function validateConfigObject(
   }
 
   return issues;
+}
+
+export async function inspectProjectConfigFile(configPath: string): Promise<ConfigValidationIssue[]> {
+  let raw: string;
+
+  try {
+    raw = await fs.readFile(configPath, "utf8");
+  } catch (error) {
+    const detail = error instanceof Error && error.message.trim().length > 0
+      ? error.message
+      : "unknown read error";
+
+    return [{
+      path: "<root>",
+      message: `Unable to read config file at ${configPath}: ${detail}.`,
+      severity: "error",
+    }];
+  }
+
+  let parsed: unknown;
+
+  try {
+    parsed = JSON.parse(raw) as unknown;
+  } catch (error) {
+    const detail = error instanceof Error && error.message.trim().length > 0
+      ? error.message
+      : "invalid JSON";
+
+    return [{
+      path: "<root>",
+      message: `Config file contains invalid JSON: ${detail}.`,
+      severity: "error",
+    }];
+  }
+
+  if (typeof parsed !== "object" || parsed === null || Array.isArray(parsed)) {
+    return [{ path: "<root>", message: "Config file is not a JSON object.", severity: "error" }];
+  }
+
+  return validateConfigObject(parsed as Record<string, unknown>);
 }

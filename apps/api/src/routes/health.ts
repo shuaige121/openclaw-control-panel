@@ -5,7 +5,7 @@ export const healthRouter = Router();
 healthRouter.get("/", (_request, response) => {
   response.json({
     ok: true,
-    service: "openclaw-manager-api",
+    service: "openclaw-control-panel-api",
     time: new Date().toISOString(),
   });
 });

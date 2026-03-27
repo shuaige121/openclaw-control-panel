@@ -1,10 +1,10 @@
-import fs from "node:fs/promises";
 import net from "node:net";
 import { readProjectHooksProfile, readProjectSkillsProfile } from "./project-hooks-skills";
+import { getAgents } from "./project-agents";
 import { readProjectMemoryProfile } from "./project-memory-mode";
 import { readProjectModelProfile } from "./project-models";
 import { readProjectSandboxProfile } from "./project-sandbox";
-import { validateConfigObject, type ConfigValidationIssue } from "./project-config-validator";
+import { inspectProjectConfigFile, type ConfigValidationIssue } from "./project-config-validator";
 import type {
   ManagerAuthProfile,
   ProjectAuthProfile,
@@ -62,7 +62,7 @@ function buildAuthProfile(
   };
 }
 
-function buildManagerAuthProfile(registry: ProjectRegistryData): ManagerAuthProfile {
+export function buildManagerAuthProfile(registry: ProjectRegistryData): ManagerAuthProfile {
   const overriddenProjects = registry.projects.filter((project) => project.auth.mode === "custom").length;
 
   return {
@@ -130,16 +130,7 @@ export async function probeTcpPort(host: string, port: number, timeoutMs: number
 }
 
 async function checkConfigForIssues(project: StoredProjectRecord): Promise<ConfigValidationIssue[]> {
-  try {
-    const raw = await fs.readFile(project.paths.configPath, "utf8");
-    const parsed = JSON.parse(raw) as unknown;
-    if (typeof parsed !== "object" || parsed === null || Array.isArray(parsed)) {
-      return [{ path: "<root>", message: "Config file is not a JSON object.", severity: "error" }];
-    }
-    return validateConfigObject(parsed as Record<string, unknown>);
-  } catch {
-    return [];
-  }
+  return inspectProjectConfigFile(project.paths.configPath);
 }
 
 export async function probeProjectRuntime(project: StoredProjectRecord): Promise<ProbeResult> {
@@ -199,42 +190,64 @@ export async function probeProjectRuntime(project: StoredProjectRecord): Promise
   };
 }
 
+export async function buildProjectListItem(
+  project: StoredProjectRecord,
+  registry: ProjectRegistryData,
+): Promise<ProjectListItem> {
+  const agentsPromise: Promise<Awaited<ReturnType<typeof getAgents>>> = (async () => {
+    try {
+      return await getAgents(project.paths.configPath);
+    } catch {
+      return [];
+    }
+  })();
+
+  const [probe, model, memory, sandbox, hooks, skills, agents] = await Promise.all([
+    probeProjectRuntime(project),
+    readProjectModelProfile(project),
+    readProjectMemoryProfile(project),
+    readProjectSandboxProfile(project),
+    readProjectHooksProfile(project),
+    readProjectSkillsProfile(project),
+    agentsPromise,
+  ]);
+  const lastSmokeTest = project.lastSmokeTest;
+
+  return {
+    id: project.id,
+    name: project.name,
+    description: project.description,
+    runtimeStatus: probe.runtimeStatus,
+    healthStatus: probe.healthStatus,
+    gatewayPort: project.gateway.port,
+    tags: project.tags,
+    lastSeenAt: probe.lastSeenAt,
+    paths: project.paths,
+    endpoints: buildProjectEndpoints(project),
+    auth: buildAuthProfile(project, registry),
+    model: {
+      ...model,
+      lastObservedProvider: lastSmokeTest?.summary.provider ?? null,
+      lastObservedRef: lastSmokeTest?.summary.model ?? null,
+      lastObservedAt: lastSmokeTest?.finishedAt ?? null,
+    },
+    memory,
+    sandbox,
+    hooks,
+    skills,
+    agents,
+    capabilities: project.capabilities,
+    compatibility: project.compatibility,
+    configIssues: probe.configIssues,
+    lastSmokeTest,
+  };
+}
+
 export async function buildProjectListResponse(
   registry: ProjectRegistryData,
 ): Promise<ProjectListResponse> {
   const items = await Promise.all(
-    registry.projects.map(async (project): Promise<ProjectListItem> => {
-      const [probe, model, memory, sandbox, hooks, skills] = await Promise.all([
-        probeProjectRuntime(project),
-        readProjectModelProfile(project),
-        readProjectMemoryProfile(project),
-        readProjectSandboxProfile(project),
-        readProjectHooksProfile(project),
-        readProjectSkillsProfile(project),
-      ]);
-
-      return {
-        id: project.id,
-        name: project.name,
-        description: project.description,
-        runtimeStatus: probe.runtimeStatus,
-        healthStatus: probe.healthStatus,
-        gatewayPort: project.gateway.port,
-        tags: project.tags,
-        lastSeenAt: probe.lastSeenAt,
-        paths: project.paths,
-        endpoints: buildProjectEndpoints(project),
-        auth: buildAuthProfile(project, registry),
-        model,
-        memory,
-        sandbox,
-        hooks,
-        skills,
-        capabilities: project.capabilities,
-        compatibility: project.compatibility,
-        configIssues: probe.configIssues,
-      };
-    }),
+    registry.projects.map((project) => buildProjectListItem(project, registry)),
   );
 
   const summary = {

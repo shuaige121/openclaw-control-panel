@@ -5,7 +5,7 @@ import { spawn } from "node:child_process";
 import { HttpError } from "../lib/http-error";
 import { PROJECT_RUNTIME_DIR } from "../paths";
 import { resolveManagedOpenClawLaunchSpec } from "./project-managed-openclaw";
-import { validateConfigObject, type ConfigValidationIssue } from "./project-config-validator";
+import { inspectProjectConfigFile, type ConfigValidationIssue } from "./project-config-validator";
 import { probeTcpPort } from "./project-probe";
 import type {
   CommandExecutionResult,
@@ -236,16 +236,7 @@ async function tailLog(logPath: string): Promise<string> {
 }
 
 async function preflightConfigCheck(project: StoredProjectRecord): Promise<ConfigValidationIssue[]> {
-  try {
-    const raw = await fsp.readFile(project.paths.configPath, "utf8");
-    const parsed = JSON.parse(raw) as unknown;
-    if (typeof parsed !== "object" || parsed === null || Array.isArray(parsed)) {
-      return [{ path: "<root>", message: "Config file is not a JSON object.", severity: "error" }];
-    }
-    return validateConfigObject(parsed as Record<string, unknown>);
-  } catch {
-    return [];
-  }
+  return inspectProjectConfigFile(project.paths.configPath);
 }
 
 async function executeManagedStart(
@@ -279,7 +270,7 @@ async function executeManagedStart(
       command: existingState.command,
       startedAt,
       exitCode: 0,
-      stdout: `Project already running under manager launcher (pid ${existingState.pid}).`,
+      stdout: `Project already running under Control Panel launcher (pid ${existingState.pid}).`,
     });
   }
 
@@ -290,7 +281,7 @@ async function executeManagedStart(
       startedAt,
       exitCode: 1,
       stderr:
-        "Gateway port is already in use, but manager does not have a live runtime state for this project.",
+        "Gateway port is already in use, but Control Panel does not have a live runtime state for this project.",
     });
   }
 
@@ -312,7 +303,7 @@ async function executeManagedStart(
 
     childPid = child.pid;
     if (typeof childPid !== "number") {
-      throw new HttpError(500, `Manager could not start project "${project.id}".`);
+      throw new HttpError(500, `Control Panel could not start project "${project.id}".`);
     }
 
     child.unref();
@@ -393,7 +384,7 @@ async function executeManagedStop(
       startedAt,
       exitCode: 1,
       stderr:
-        "Gateway port is still open, but manager has no runtime state for this project. Stop it manually or re-register it with custom commands.",
+        "Gateway port is still open, but Control Panel has no runtime state for this project. Stop it manually or re-register it with custom commands.",
     });
   }
 

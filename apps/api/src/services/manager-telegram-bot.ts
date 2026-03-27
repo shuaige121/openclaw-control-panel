@@ -2,7 +2,7 @@ import path from "node:path";
 import { setTimeout as sleep } from "node:timers/promises";
 import { ActionHistoryService } from "./action-history";
 import { scanProjectCompatibility } from "./project-compatibility";
-import { buildProjectListResponse } from "./project-probe";
+import { buildProjectListItem, buildProjectListResponse } from "./project-probe";
 import { executeProjectAction } from "./project-command-runner";
 import { ProjectRegistryService } from "./project-registry";
 import { ManagerTelegramStateService } from "./manager-telegram-state";
@@ -221,7 +221,7 @@ export class ManagerTelegramBotService {
       const replyText = await this.executeCommand(parsedCommand);
       await this.sendMessage(chatId, replyText);
     } catch (error) {
-      const messageText = error instanceof Error ? error.message : "Unknown manager bot error.";
+      const messageText = error instanceof Error ? error.message : "Unknown Control Panel bot error.";
       await this.sendMessage(chatId, `操作失败: ${messageText}`);
     }
   }
@@ -231,7 +231,7 @@ export class ManagerTelegramBotService {
       case "/help":
       case "/start":
         return [
-          "OpenClaw Manager bot commands:",
+          "OpenClaw Control Panel bot commands:",
           "/projects",
           "/status <projectId>",
           "/start <projectId>",
@@ -281,12 +281,13 @@ export class ManagerTelegramBotService {
     }
 
     const registry = await this.registryService.readRegistry();
-    const list = await buildProjectListResponse(registry);
-    const project = list.items.find((entry) => entry.id === projectId);
+    const projectRecord = registry.projects.find((entry) => entry.id === projectId);
 
-    if (!project) {
+    if (!projectRecord) {
       throw new Error(`未找到项目 ${projectId}`);
     }
+
+    const project = await buildProjectListItem(projectRecord, registry);
 
     return [
       `Project: ${project.name} (${project.id})`,

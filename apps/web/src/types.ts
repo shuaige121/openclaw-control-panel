@@ -16,7 +16,15 @@ export type ProjectSandboxScope = "session" | "agent" | "shared";
 export type ProjectSandboxWorkspaceAccess = "none" | "ro" | "rw";
 export type ProjectHookSource = "internal";
 export type ProjectSkillSource = "bundled" | "managed" | "workspace" | "config_only";
-export type ProjectTemplateId = "general" | "stateless" | "sandboxed";
+export type ProjectTemplateId =
+  | "general"
+  | "stateless"
+  | "sandboxed"
+  | "ultramarines"
+  | "sisters-of-silence"
+  | "iron-hands"
+  | "blood-angels"
+  | "dark-angels";
 export type ProjectCompatibilityCheckName =
   | "lifecycle"
   | "gateway_probe"
@@ -253,6 +261,25 @@ export type ProjectUpsertPayload = {
       };
   lifecycle: ProjectLifecycle;
   capabilities: ProjectCapabilities;
+};
+
+export type ProjectCreateResponse = {
+  ok: true;
+  created?: boolean;
+  projectId: string;
+  registryPath: string;
+  instance?: {
+    profileName: string;
+    port: number;
+    rootPath: string;
+    configPath: string;
+    workspacePath: string;
+    stateDirPath: string;
+    authLinkMode?: string;
+    modelsLinkMode?: string;
+    extensionsLinkMode?: string;
+  };
+  appliedTemplateId?: ProjectTemplateId | null;
 };
 
 export type ProjectActionResponse = {

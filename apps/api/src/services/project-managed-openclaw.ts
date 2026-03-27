@@ -31,7 +31,10 @@ async function pathExists(targetPath: string): Promise<boolean> {
 
 function getManagedLifecycle(project: StoredProjectRecord): ProjectManagedOpenClawLifecycle {
   if (project.lifecycle.mode !== "managed_openclaw") {
-    throw new HttpError(400, `Project "${project.id}" is not configured for manager-managed OpenClaw runtime.`);
+    throw new HttpError(
+      400,
+      `Project "${project.id}" is not configured for Control Panel-managed OpenClaw runtime.`,
+    );
   }
 
   return project.lifecycle;
@@ -99,7 +102,7 @@ async function resolveCliInvocation(project: StoredProjectRecord): Promise<{
     command: "openclaw",
     argsPrefix: [],
     displayPrefix: "openclaw",
-    message: 'No local openclaw.mjs found; manager will use "openclaw" from PATH.',
+    message: 'No local openclaw.mjs found; Control Panel will use "openclaw" from PATH.',
   };
 }
 
@@ -110,7 +113,7 @@ export async function inspectManagedOpenClawRuntime(project: StoredProjectRecord
   if (project.lifecycle.mode !== "managed_openclaw") {
     return {
       supported: false,
-      message: "Project lifecycle is not set to manager-managed OpenClaw.",
+      message: "Project lifecycle is not set to Control Panel-managed OpenClaw.",
     };
   }
 

@@ -162,15 +162,15 @@ function deriveReason(status: ProjectCompatibilityStatus, checks: ProjectCompati
   const missingChecks = checks.filter((check) => !check.supported).map((check) => check.name);
 
   if (status === "full") {
-    return "Project matches the current OpenClaw layout and manager feature set.";
+    return "Project matches the current OpenClaw layout and Control Panel feature set.";
   }
 
   if (status === "incompatible") {
     if (missingChecks.includes("config_patch")) {
-      return "Config file is missing or unreadable, so manager cannot safely patch this project.";
+      return "Config file is missing or unreadable, so Control Panel cannot safely patch this project.";
     }
 
-    return "Lifecycle or filesystem assumptions do not match the current manager integration model.";
+    return "Lifecycle or filesystem assumptions do not match the current Control Panel integration model.";
   }
 
   return `Project can be managed at runtime, but these areas are partial: ${missingChecks.join(", ")}.`;
@@ -271,7 +271,7 @@ export async function scanProjectCompatibility(
           name,
           project.capabilities.bulkHooks && hooksEntries !== null,
           !project.capabilities.bulkHooks
-            ? "Bulk hook actions are disabled in the manager registry."
+            ? "Bulk hook actions are disabled in the Control Panel registry."
             : hooksEntries !== null
               ? "hooks.internal.entries is present."
               : "hooks.internal.entries is missing from config.",
@@ -281,7 +281,7 @@ export async function scanProjectCompatibility(
           name,
           project.capabilities.bulkSkills && skillsEntries !== null,
           !project.capabilities.bulkSkills
-            ? "Bulk skill actions are disabled in the manager registry."
+            ? "Bulk skill actions are disabled in the Control Panel registry."
             : skillsEntries !== null
               ? "skills.entries is present."
               : "skills.entries is missing from config.",
@@ -291,9 +291,9 @@ export async function scanProjectCompatibility(
           name,
           project.capabilities.bulkMemory && workspaceExists,
           !project.capabilities.bulkMemory
-            ? "Bulk memory actions are disabled in the manager registry."
+            ? "Bulk memory actions are disabled in the Control Panel registry."
             : workspaceExists
-              ? "Workspace path exists; manager can append or remove tagged memory blocks."
+              ? "Workspace path exists; Control Panel can append or remove tagged memory blocks."
               : "Workspace path does not exist.",
         );
     }

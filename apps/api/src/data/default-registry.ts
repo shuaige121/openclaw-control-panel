@@ -57,7 +57,7 @@ export const DEFAULT_PROJECT_REGISTRY: ProjectRegistryData = {
   version: 1,
   managerAuth: {
     strategy: "token",
-    label: "默认 manager token",
+    label: "默认控制台 token",
     secret: "manager-demo-token-change-me",
   },
   projects: [
@@ -87,8 +87,9 @@ export const DEFAULT_PROJECT_REGISTRY: ProjectRegistryData = {
       },
       capabilities: DEFAULT_CAPABILITIES,
       compatibility: createSeedCompatibility(
-        "Seed project matches the current OpenClaw manager assumptions.",
+        "Seed project matches the current OpenClaw Control Panel assumptions.",
       ),
+      lastSmokeTest: null,
     },
     {
       id: "ops-rescue",
@@ -119,8 +120,9 @@ export const DEFAULT_PROJECT_REGISTRY: ProjectRegistryData = {
       },
       capabilities: DEFAULT_CAPABILITIES,
       compatibility: createSeedCompatibility(
-        "Seed project matches the current OpenClaw manager assumptions.",
+        "Seed project matches the current OpenClaw Control Panel assumptions.",
       ),
+      lastSmokeTest: null,
     },
     {
       id: "lab-dev",
@@ -148,8 +150,9 @@ export const DEFAULT_PROJECT_REGISTRY: ProjectRegistryData = {
       },
       capabilities: DEFAULT_CAPABILITIES,
       compatibility: createSeedCompatibility(
-        "Seed project matches the current OpenClaw manager assumptions.",
+        "Seed project matches the current OpenClaw Control Panel assumptions.",
       ),
+      lastSmokeTest: null,
     },
     {
       id: "qa-shadow",
@@ -180,8 +183,9 @@ export const DEFAULT_PROJECT_REGISTRY: ProjectRegistryData = {
       },
       capabilities: DEFAULT_CAPABILITIES,
       compatibility: createSeedCompatibility(
-        "Seed project matches the current OpenClaw manager assumptions.",
+        "Seed project matches the current OpenClaw Control Panel assumptions.",
       ),
+      lastSmokeTest: null,
     },
   ],
 };

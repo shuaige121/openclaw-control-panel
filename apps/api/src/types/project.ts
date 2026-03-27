@@ -1,3 +1,5 @@
+import type { AgentInfo } from "../services/project-agents";
+
 export type ProjectRuntimeStatus = "running" | "starting" | "stopped" | "error";
 export type ProjectHealthStatus = "healthy" | "degraded" | "unknown" | "unhealthy";
 export type ProjectAuthMode = "inherit_manager" | "custom";
@@ -24,7 +26,20 @@ export type ProjectSandboxScope = "session" | "agent" | "shared";
 export type ProjectSandboxWorkspaceAccess = "none" | "ro" | "rw";
 export type ProjectHookSource = "internal";
 export type ProjectSkillSource = "bundled" | "managed" | "workspace" | "config_only";
-export type ProjectTemplateId = "general" | "stateless" | "sandboxed";
+export type ProjectTemplateId =
+  | "general"
+  | "stateless"
+  | "sandboxed"
+  | "ultramarines"
+  | "sisters-of-silence"
+  | "iron-hands"
+  | "blood-angels"
+  | "dark-angels";
+export type ProjectSmokeTestScenarioId =
+  | "model_identity"
+  | "tool_exec_time"
+  | "tool_web_fetch"
+  | "context_recall";
 
 export interface ProjectAuthProfile {
   mode: ProjectAuthMode;
@@ -83,6 +98,9 @@ export interface ProjectModelProfile {
   fallbackRefs: string[];
   catalogMode: "open" | "allowlist";
   configuredModels: ProjectModelOption[];
+  lastObservedProvider: string | null;
+  lastObservedRef: string | null;
+  lastObservedAt: string | null;
 }
 
 export interface ProjectMemoryProfile {
@@ -194,6 +212,7 @@ export interface StoredProjectRecord {
   lifecycle: ProjectLifecycle;
   capabilities: ProjectCapabilities;
   compatibility: ProjectCompatibilityProfile;
+  lastSmokeTest: ProjectSmokeTestResponse | null;
 }
 
 export interface ProjectRegistryData {
@@ -225,9 +244,11 @@ export interface ProjectListItem {
   sandbox: ProjectSandboxProfile;
   hooks: ProjectHooksProfile;
   skills: ProjectSkillsProfile;
+  agents?: AgentInfo[];
   capabilities: ProjectCapabilities;
   compatibility: ProjectCompatibilityProfile;
   configIssues?: ConfigValidationIssueRef[];
+  lastSmokeTest: ProjectSmokeTestResponse | null;
 }
 
 export interface ManagerAuthProfile {
@@ -263,6 +284,33 @@ export interface CommandExecutionResult {
   stdout: string;
   stderr: string;
   durationMs: number;
+}
+
+export interface ProjectSmokeTestScenarioResult {
+  id: ProjectSmokeTestScenarioId;
+  label: string;
+  ok: boolean;
+  durationMs: number;
+  outputText: string;
+  toolHint: string | null;
+  provider: string | null;
+  model: string | null;
+  error: string | null;
+}
+
+export interface ProjectSmokeTestResponse {
+  ok: boolean;
+  projectId: string;
+  startedAt: string;
+  finishedAt: string;
+  sessionId: string;
+  summary: {
+    passed: number;
+    total: number;
+    provider: string | null;
+    model: string | null;
+  };
+  results: ProjectSmokeTestScenarioResult[];
 }
 
 export interface BulkActionProjectResult {
