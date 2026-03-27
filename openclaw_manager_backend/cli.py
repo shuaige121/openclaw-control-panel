@@ -336,12 +336,16 @@ def strip_unsupported_openclaw_keys(config: dict[str, Any]) -> None:
             config.pop("commands", None)
 
     channels = config.get("channels")
-    if not isinstance(channels, dict):
-        return
+    if isinstance(channels, dict):
+        telegram = channels.get("telegram")
+        if isinstance(telegram, dict):
+            telegram.pop("streaming", None)
 
-    telegram = channels.get("telegram")
-    if isinstance(telegram, dict):
-        telegram.pop("streaming", None)
+    meta = config.get("meta")
+    if isinstance(meta, dict):
+        meta.pop("openclawManager", None)
+        if not meta:
+            config.pop("meta", None)
 
 
 def clear_destination_path(destination: Path) -> None:
@@ -403,6 +407,24 @@ def copy_or_initialize_auth_profiles(
         encoding="utf-8",
     )
     return "initialized"
+
+
+def resolve_openclaw_install_dir(home_dir: Path) -> Path:
+    """Resolve the OpenClaw installation directory (contains openclaw.mjs).
+
+    Search order:
+      1. ~/.npm-global/lib/node_modules/openclaw (npm global install)
+      2. ~/openclaw (local/dev install)
+      3. Fall back to state_dir (caller must handle missing openclaw.mjs)
+    """
+    candidates = [
+        home_dir / ".npm-global" / "lib" / "node_modules" / "openclaw",
+        home_dir / "openclaw",
+    ]
+    for candidate in candidates:
+        if (candidate / "openclaw.mjs").exists():
+            return candidate
+    return None
 
 
 def provision_instance(args: argparse.Namespace) -> dict[str, Any]:
@@ -476,7 +498,7 @@ def provision_instance(args: argparse.Namespace) -> dict[str, Any]:
     return {
         "profileName": profile_name,
         "port": port,
-        "rootPath": str(state_dir),
+        "rootPath": str(resolve_openclaw_install_dir(home_dir) or state_dir),
         "configPath": str(config_path),
         "workspacePath": str(workspace_path),
         "stateDirPath": str(state_dir),
