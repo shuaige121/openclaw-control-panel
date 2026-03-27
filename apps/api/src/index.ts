@@ -33,6 +33,9 @@ const app = createServer({
     allowedIps,
     trustProxy: process.env.MANAGER_TRUST_PROXY === "1",
   },
+  instanceCreatorOptions: {
+    uvBin: process.env.UV_BIN || undefined,
+  },
 });
 const managerTelegramBotConfig = readManagerTelegramBotConfig(process.env);
 

@@ -14,3 +14,6 @@ data/action-history.json
 data/manager-telegram-state.json
 data/runtime/
 data/*.local.json
+
+__pycache__/
+*.pyc
