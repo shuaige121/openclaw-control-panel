@@ -14,6 +14,7 @@ import { createAgentsRouter } from "./routes/agents";
 import { createBulkRouter } from "./routes/bulk";
 import { healthRouter } from "./routes/health";
 import { createChannelsRouter } from "./routes/channels";
+import { createFilesRouter } from "./routes/files";
 import { createProjectActionsRouter } from "./routes/project-actions";
 import { createProjectsRouter } from "./routes/projects";
 import { ActionHistoryService } from "./services/action-history";
@@ -63,6 +64,10 @@ export function createServer(options: CreateServerOptions = {}) {
   app.use(
     "/api/projects",
     createChannelsRouter({ registryService, actionHistoryService }),
+  );
+  app.use(
+    "/api/projects",
+    createFilesRouter({ registryService, actionHistoryService }),
   );
   app.use(
     "/api/projects/:id/actions",
